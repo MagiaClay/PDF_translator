@@ -223,9 +223,9 @@ def draw_ocr_box_txt_one_pic(image,
     # 此处进行图像缩小
 
     img_merge = cv2.cvtColor(np.asarray(img_merge), cv2.COLOR_RGB2BGR)
-    scale_num = 0.5
+    scale_num = 0.5 # 缩小系数为.0.5
     dist_size = (int(scale_num * img_merge.shape[0]), int(scale_num * img_merge.shape[1]))
-    cv_image = resize_keep_aspectratio(img_merge, dist_size)  # 对文件进行等比放大
+    cv_image = resize_keep_aspectratio(img_merge, dist_size)  # 对文件进行等缩小
     img_merge = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
 
     return img_merge  # 返回Image对象

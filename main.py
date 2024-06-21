@@ -28,7 +28,6 @@ root.withdraw()
 eventlet.monkey_patch()
 
 
-
 # 重定向控制台信号
 class Shell(QtCore.QObject):
     newText = QtCore.pyqtSignal(str)
@@ -46,13 +45,14 @@ class var:
     word_mod = 'auto'  # 文字定位模式
     img_re_bool = True  # 图像修复开关
     img_re_mod = 1  # 图像修复模式
-    font_size = 25 # 默认字体大小
+    font_size = 25  # 默认字体大小
 
 
 # 运行中的缓存文件，以类的方式进行缓存
 class memory():
     model = None  # 模型
     img_show = None  # 显示的图像
+    img_show_origin = None
     img_mark = None  # 文字掩码
     img_mark_more = None  # 文字掩码2
     img_repair = None  # 修复后的图像
@@ -170,9 +170,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.pushButton_5.clicked.connect(lambda event: self.doit())
         self.ui.pushButton_15.clicked.connect(lambda event: self.closeit())
 
+        # 将翻译功能diable
+        self.ui.pushButton_4.setEnabled(False)
+
     # 其他线程
     def thredstart(self):
-        QtCore.QTimer.singleShot(500, self.config_read) # 没半秒执行一次读取
+        QtCore.QTimer.singleShot(500, self.config_read)  # 没半秒执行一次读取
         QtCore.QTimer.singleShot(1000, self.thred_cuda)
         QtCore.QTimer.singleShot(1500, self.thread_net)
 
@@ -390,9 +393,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.state.task_end = 0  # 结束位置
         self.memory.task_out = ''  # 到处目录
         self.memory.task_name = []  # 读取的文件名
-        self.memory.task_img = []   # 图片源文件
+        self.memory.task_img = []  # 图片源文件
 
-        if s: # 选择整个文件夹
+        if s:  # 选择整个文件夹
             path = filedialog.askdirectory()
             if path == '':
                 return
@@ -403,11 +406,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     '*.TIF', '*.EXR', '*.JP2', '*.WEBP'):
                 files.extend(glob.glob(os.path.join(path, ext)))
             files.sort(key=lambda x: int("".join(list(filter(str.isdigit, x)))))  # 文件名按数字排序
-            self.memory.task_out = os.path.dirname(path) + '/out/' # 保存在当前目录中out的位置
+            self.memory.task_out = os.path.dirname(path) + '/out/'  # 保存在当前目录中out的位置
             for file_path in files:
                 try:
                     try:
-                        img = cv2.imread(file_path) # 绝对路径
+                        img = cv2.imread(file_path)  # 绝对路径
                         height, width, channel = img.shape
                     except:
                         img = self.cv2_imread(file_path)
@@ -416,7 +419,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
                     self.memory.task_img.append(img)
                     self.state.task_num += 1
-                    self.memory.task_name.append(os.path.basename(file_path))
+                    self.memory.task_name.append(f'{os.path.splitext(os.path.basename(file_path))[0]}')
+                    # self.shelltext(file_path) # 此处是绝对路径
                 except:
                     messagebox.showerror(title='Error', message=f'{file_path}图片读取Error')
             if self.state.task_num == 0:
@@ -446,16 +450,18 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.state.task_end = 0
                 self.memory.task_out = os.path.dirname(path)
                 self.memory.task_name = []
-                self.memory.task_name.append(f'{root}_re{ext}')
+                self.memory.task_name.append(f'{root}')
                 self.panel_shownext()
                 print(f'Info:成功导入{self.state.task_num}张图片')
             except:
                 messagebox.showerror(title='Error', message=f'{path}图片读取Error')
                 self.state.task_num = 0
                 self.panel_clean()
+
         if self.state.task_num > 0:
             self.ui.img.flag_switch = True
-            self.ui.pushButton_4.setEnabled(True)
+            self.ui.img_origin.flag_switch = True
+            self.ui.pushButton_4.setEnabled(False)
             self.ui.pushButton_14.setEnabled(True)
             self.ui.pushButton_12.setEnabled(True)
             self.ui.pushButton_9.setEnabled(True)
@@ -489,23 +495,39 @@ class MainWindow(QtWidgets.QMainWindow):
     # 更新面板显示图片
     def panel_shownext(self):
         self.ui.img.setStyleSheet('background-color:rgb(255,255,255);\ncolor:rgba(0,0,0,0);')
-        img = self.memory.task_img[self.state.task_end] # 获取当前存档列表里最后的图片
-        self.memory.img_show = img.copy() # 显示图片的copy
-        self.memory.img_mark_more, self.memory.img_mark, self.memory.img_textlines = textblockdetector(img) # 获取图像掩码和掩码box
+        self.ui.img_origin.setStyleSheet('background-color:rgb(255,255,255);\ncolor:rgba(0,0,0,0);')
+        img_origin_path = self.memory.task_name[self.state.task_end]
+        filepath = 'D:/testPics/OriginPicJPG/' + os.path.split(img_origin_path)[1]  # 获取文件名
+        try:
+            img_origin = cv2.imread(filepath)
+            height_o, width_o, channel_o = img_origin.shape
+        except:
+            img_origin = self.cv2_imread(filepath)
+            height_o, width_o, channel_o = img_origin.shape
+        if channel_o == 1:
+            img_origin = cv2.cvtColor(img_origin, cv2.COLOR_GRAY2RGB)
+        img = self.memory.task_img[self.state.task_end]  # 获取当前存档列表里最后的图片
+        self.memory.img_show_origin = img_origin.copy()
+        self.memory.img_show = img.copy()  # 显示图片的copy
+        self.memory.img_mark_more, self.memory.img_mark, self.memory.img_textlines = textblockdetector(
+            img)  # 获取图像掩码和掩码box
         self.memory.img_mark_more[self.memory.img_mark_more != 0] = 255
-
         height, width, channel = img.shape
         self.state.img_half = False
-        if height > 1500 or width > 1000: # 如果超出[1000,1500]大小的图片要进行缩小，可设置
+        if height > 1200 or width > 1200:  # 如果超出[1000,1500]大小的图片要进行缩小，取决于电脑像素，可设置
             self.state.img_half = True
             height //= 2
             width //= 2
+            height_o //= 2
+            width_o //= 2
         else:
             self.state.img_half = False
         # 控制Tlable大小
+        self.ui.img_origin.setFixedWidth(width_o)
+        self.ui.img_origin.setFixedHeight(height_o)
         self.ui.img.setFixedWidth(width)
         self.ui.img.setFixedHeight(height)
-        print('设置TLable大小完毕')
+        # print('设置TLable大小完毕')
 
         self.show_img()
         self.ui.label_3.setText(f'{self.state.task_end}/{self.state.task_num}')
@@ -519,20 +541,21 @@ class MainWindow(QtWidgets.QMainWindow):
         if not os.path.exists(self.memory.task_out):
             os.mkdir(self.memory.task_out)
         name = self.memory.task_out + "/" + self.memory.task_name[self.state.task_end]
-        # cv2.imwrite(name, self.memory.img_show)
-        cv2.imencode('.png', self.memory.img_show)[1].tofile(name)
+        # cv2.imwrite(name, self.memory.img_show) # 此处进行图片保存
+        cv2.imencode('.png', self.memory.img_show)[1].tofile(name) # 将图片编码缓存，并保存到本地
         self.state.task_end += 1
-        self.ui.img.update() # 更新界面
+        self.ui.img.update()  # 更新界面
 
         messagebox.showinfo(title='成功', message=f'图片保存完成\n{self.memory.task_out}\\{name}')
         self.ui.textEdit_3.setText('')
         print(f'Info:图片保存完成\n{name}')
 
         if self.state.task_end < self.state.task_num:
-            self.panel_shownext()   # 如果仍无没结束，则继续该任务
+            self.panel_shownext()  # 如果仍无没结束，则继续该任务
         else:
             self.panel_clean()
             self.ui.img.flag_switch = False  # 矩形绘制锁
+            self.ui.img_origin.flag_switch = False
             self.ui.pushButton_4.setEnabled(False)
             self.ui.pushButton_14.setEnabled(False)
             self.ui.pushButton_12.setEnabled(False)
@@ -570,7 +593,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     # 字距设置
     def new_character_style_window(self):
-        Window = CharacterStyle() # 创建窗口
+        Window = CharacterStyle()  # 创建窗口
         Window.ui.pushButton_1.setStyleSheet(
             f'background-color: {self.var.word_conf.color};border-width:0px;border-radius:11px;')
         Window.ui.lineEdit_3.setText(str(self.var.word_conf.stroke_width))  # 将word_conf的内容输出到其上
@@ -649,16 +672,16 @@ class MainWindow(QtWidgets.QMainWindow):
     # 根据任务列表中的主建筑行
     def doit(self):
         if self.state.action_running:
-            self.action_save() # 将图片链表进行保存
+            self.action_save()  # 将图片链表进行保存
             if self.state.text_running:
-                self.do_add_text() # 如果是需要嵌字模式，则调用嵌字函数
+                self.do_add_text()  # 如果是需要嵌字模式，则调用嵌字函数
             else:
                 self.do_translation()
 
     # 进行翻译
     def do_translation(self):
-        pos = self.memory.textline_box[0] # 获取第一个box
-        if self.var.img_re_bool: # 如果需要图像修复
+        pos = self.memory.textline_box[0]  # 获取第一个box
+        if self.var.img_re_bool:  # 如果需要图像修复
             if self.memory.img_repair is None:
                 self.img_repair()
             roi = self.memory.img_repair[pos[1]:pos[1] + pos[3], pos[0]:pos[0] + pos[2]]
@@ -666,7 +689,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             # 再此处进行填充
             white = np.zeros([pos[3], pos[2], 3], dtype=np.uint8) + 255
-            self.memory.img_show[pos[1]:pos[1] + pos[3], pos[0]:pos[0] + pos[2]] = white # 将该图片之间涂白
+            self.memory.img_show[pos[1]:pos[1] + pos[3], pos[0]:pos[0] + pos[2]] = white  # 将该图片之间涂白
 
         print('Info:图像修复完成')
         # 添加文字
@@ -708,7 +731,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             box = self.memory.textline_box[0]
             result = self.memory.model(self.memory.img_show[box[1]:box[3] + box[1], box[0]:box[2] + box[0]])
-            print("result的结果："+str(result))
+            print("result的结果：" + str(result))
             self.ui.textEdit.setText(result)
             if result.replace(" ", "") == '':
                 print('War:文字识别异常,请手动输入')
@@ -721,20 +744,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
     # 添加文本功能, 将文本写到指定地区
     def do_add_text(self):
-        text = self.ui.textEdit_2.toPlainText() # 获取text文本，此处是否输入含'\n'的文本内容
+        text = self.ui.textEdit_2.toPlainText()  # 获取text文本，此处是否输入含'\n'的文本内容
         if text.replace(" ", "") != '':  # 如果输入的文本部位空
-            img = self.memory.img_show.copy() # 从memory获得当前的图片
+            img = self.memory.img_show.copy()  # 从memory获得当前的图片
 
             pos = self.memory.textline_box[0]  # 获得当前鼠标画出的矩形窗, 均统计为POS[x, y, w, h]
-            if pos is None: print('Error:boxError') # pos符合条件
-            self.var.word_conf.box = conf.Box(pos[0], pos[1], pos[2], pos[3]) # 利用pos生成一个box类，记录坐上坐标、右下坐标和宽高，将其类反正该字体类里
+            if pos is None: print('Error:boxError')  # pos符合条件
+            self.var.word_conf.box = conf.Box(pos[0], pos[1], pos[2], pos[3])  # 利用pos生成一个box类，记录坐上坐标、右下坐标和宽高，将其类反正该字体类里
 
-            if self.var.word_way == 2 or self.var.word_language == 'en' or self.var.word_language == 'ko': # 如果横向文字、语言en或ko
+            if self.var.word_way == 2 or self.var.word_language == 'en' or self.var.word_language == 'ko':  # 如果横向文字、语言en或ko
                 if self.var.word_way == 1:
                     print('War:当前语言不支持竖排文字')  # paddleOCR不支持横向文字
                 self.var.word_conf.dir = 'h'
             else:
-                self.var.word_conf.dir = 'v' # word_way负责当前文字走向，word_conf.dir负责判断后的文字走向
+                self.var.word_conf.dir = 'v'  # word_way负责当前文字走向，word_conf.dir负责判断后的文字走向
             img = render.Render(img)
             img = img.draw(text, self.var.word_conf)
             self.memory.img_show = img.copy()
@@ -778,7 +801,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 return
             textline_box = []
             self.memory.textline_box = []
-
+            # 图像预处理
             for i in self.memory.img_textlines:
                 if compute_iou([i.xyxy[0], i.xyxy[1], i.xyxy[2], i.xyxy[3]],
                                [pos[0], pos[1], pos[0] + pos[2], pos[1] + pos[3]]) > 0.6:  # 计算交并比
@@ -802,7 +825,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 box = textline_box[0]
                 print('Info:当前区域检测有多段文字\n文字输出排列强制自动\n请多次确认翻译')
 
-            result = self.memory.model(self.memory.img_show[box[1]:box[3] + box[1], box[0]:box[2] + box[0]])
+            result = self.memory.model(self.memory.img_show[box[1]:box[3] + box[1], box[0]:box[2] + box[0]]) # 此处出问题，返回文本为NOne
             if self.var.img_language == 'ja':
                 self.ui.textEdit.setText(result)
             else:  # 使用PaddleOCR的情况
@@ -867,18 +890,18 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.memory.img_show[pos[1]:pos[1] + pos[3], pos[0]:pos[0] + pos[2]] = roi
             else:
                 # 再此处进行白填充
-                white = np.zeros([pos[3], pos[2], 3], dtype=np.uint8) + 255 # 3 通道
-                img1_cv2_temp = self.memory.img_show[pos[1]:pos[1] + pos[3], pos[0]:pos[0] + pos[2]] # 注意此处是【w,h】
+                white = np.zeros([pos[3], pos[2], 3], dtype=np.uint8) + 255  # 3 通道
+                img1_cv2_temp = self.memory.img_show[pos[1]:pos[1] + pos[3], pos[0]:pos[0] + pos[2]]  # 注意此处是【w,h】
                 blue, green, red = bincount_1(img1_cv2_temp)
-                self.shelltext('red: '+ str(red)+'blue: '+ str(blue)+'green: '+str(green))
-                self.shelltext('white: '+str(white))
-                tempImage = Image.fromarray(cv2.cvtColor(self.memory.img_show,cv2.COLOR_BGR2RGB))
+                # self.shelltext('red: '+ str(red)+'blue: '+ str(blue)+'green: '+str(green))
+                # self.shelltext('white: '+str(white))
+                tempImage = Image.fromarray(cv2.cvtColor(self.memory.img_show, cv2.COLOR_BGR2RGB))
                 draw_img = ImageDraw.Draw(tempImage)
                 draw_img.rectangle(
-                    ((pos[0],pos[1]),((pos[0]+pos[2]),(pos[1]+pos[3]))),
+                    ((pos[0], pos[1]), ((pos[0] + pos[2]), (pos[1] + pos[3]))),
                     fill=(red, green, blue),  # (red,green,blue)
                     outline=None)
-                self.memory.img_show = cv2.cvtColor(np.array(tempImage),cv2.COLOR_RGB2BGR)
+                self.memory.img_show = cv2.cvtColor(np.array(tempImage), cv2.COLOR_RGB2BGR)
                 # white = np.full([pos[3], pos[2], 3], fill_value=[red, green, red],dtype=np.uint8)  # 3 通道
                 # self.shelltext(str(white)+''+str(red))
                 # self.memory.img_show[pos[1]:pos[1] + pos[3], pos[0]:pos[0] + pos[2]] = white
@@ -902,31 +925,49 @@ class MainWindow(QtWidgets.QMainWindow):
             print('War:任务队列未完成,右下角继续')
 
     # 提取box
-    def get_pos(self):
+    def get_pos(self):  # pos[0] : x pos[1]:y
+
         pos = self.memory.range_choice = self.ui.img.img_pos
+        self.ui.img_origin.img_pos = pos
+        self.ui.img_origin.update()
         if pos == [0, 0, 0, 0] or pos[2] < 2 or pos[3] < 2:
             print('Error:未选择输入区域')
             return None
-        if self.state.img_half:
+        if self.state.img_half: # 此处处理一半内容
             pos = self.memory.range_choice = [pos[0] * 2, pos[1] * 2, pos[2] * 2, pos[3] * 2]
+            # self.ui.img_origin.img_pos = pos
+            # self.ui.img_origin.update()
+            if pos == [0, 0, 0, 0] or pos[2] < 2 or pos[3] < 2:
+                print('Error:未选择输入区域')
+                return None
+
         return pos
 
     # 显示图像，并判断是否需要缩小一般
     def show_img(self):
         if self.state.img_half:
-            height, width, channel = self.memory.img_show.shape # 所有对图像的操作只是copy
+            height, width, channel = self.memory.img_show.shape  # 所有对图像的操作只是copy
+            height_o, width_o, channel_o = self.memory.img_show_origin.shape
             height //= 2
             width //= 2
+            height_o //= 2
+            width_o //= 2
             img = cv2.resize(self.memory.img_show, (width, height))
+            img_origin = cv2.resize(self.memory.img_show_origin, (width_o, height_o))
             print('show_Img调用成功')
         else:
+            img_origin = self.memory.img_show_origin
             img = self.memory.img_show
-        cv2.imwrite('save.jpg', self.memory.img_show) # 保存缓存
+        cv2.imwrite('save.jpg', self.memory.img_show)  # 保存缓存
+        img_origin = cv2.cvtColor(img_origin, cv2.COLOR_BGR2RGB)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        showImage_origin = QtGui.QImage(img_origin.data, img_origin.shape[1], img_origin.shape[0],
+                                        img_origin.shape[1] * img_origin.shape[2],
+                                        QtGui.QImage.Format.Format_RGB888)
         showImage = QtGui.QImage(img.data, img.shape[1], img.shape[0], img.shape[1] * img.shape[2],
                                  QtGui.QImage.Format.Format_RGB888)
+        self.ui.img_origin.setPixmap(QtGui.QPixmap.fromImage(showImage_origin))
         self.ui.img.setPixmap(QtGui.QPixmap.fromImage(showImage))
-
 
     # 撤销
     def cancel(self):
@@ -942,7 +983,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     # 保存当前图片
     def action_save(self):
-        if len(self.memory.action_save_img) == self.memory.action_save_num: # 如果当前遍历到文件尾
+        if len(self.memory.action_save_img) == self.memory.action_save_num:  # 如果当前遍历到文件尾
             self.memory.action_save_img.append(self.memory.img_show.copy())
         else:
             self.memory.action_save_img[self.memory.action_save_num] = self.memory.img_show.copy()
@@ -996,7 +1037,7 @@ class MainWindow(QtWidgets.QMainWindow):
             config.write(config_file)
 
     # 参数读取，没半秒读取一次
-    def config_read(self): # 主要读取语言，字体语言，文本方向、处理模式、修复模式等所有信息同步到本地
+    def config_read(self):  # 主要读取语言，字体语言，文本方向、处理模式、修复模式等所有信息同步到本地
         config = configparser.ConfigParser()
         config.read('config.ini', encoding='UTF-8')
         self.var.img_language = config.get('var', 'img_language')
@@ -1033,7 +1074,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.var.word_conf.stroke_fill = config.get('var', 'stroke_fill')
         self.var.word_conf.line_spacing_factor = config.getfloat('var', 'line_spacing_factor')
         self.var.word_conf.letter_spacing_factor = config.getfloat('var', 'letter_spacing_factor')
-        self.var.word_conf.font_size = config.getint('var','font_size')
+        self.var.word_conf.font_size = config.getint('var', 'font_size')
 
 
 # 字距设置窗口
@@ -1080,7 +1121,7 @@ class CharacterStyle(QtWidgets.QDialog):
 
 
 if __name__ == '__main__':
-    sys.setrecursionlimit(3000) # 为SSL请求设置最高迭代次数
+    sys.setrecursionlimit(3000)  # 为SSL请求设置最高迭代次数
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
     window.show()
