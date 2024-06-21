@@ -29,3 +29,4 @@ class Section(object):
     degree = 0  # 旋转角度(未开发)
     stroke_width = 2  # 阴影宽度0-5
     stroke_fill = "#0f0000"  # 阴影颜色
+    font_size = 25 # 默认字体大小

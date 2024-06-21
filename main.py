@@ -10,7 +10,7 @@ from tkinter import messagebox, Tk, filedialog, colorchooser
 
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 from PyQt6 import QtWidgets, QtCore, QtGui
 
 from translate import translate, change_translate_mod
@@ -19,7 +19,7 @@ from inpainting import Inpainting
 from interface import Ui_MainWindow
 from characterStyle import Ui_Dialog as CharacterStyleDialog
 from textblockdetector import dispatch as textblockdetector
-from utils import compute_iou
+from utils import compute_iou, bincount_1
 
 # tkinter弹窗初始化，标准GUI库，用于解决字体弹窗
 root = Tk()
@@ -46,6 +46,7 @@ class var:
     word_mod = 'auto'  # 文字定位模式
     img_re_bool = True  # 图像修复开关
     img_re_mod = 1  # 图像修复模式
+    font_size = 25 # 默认字体大小
 
 
 # 运行中的缓存文件，以类的方式进行缓存
@@ -406,7 +407,7 @@ class MainWindow(QtWidgets.QMainWindow):
             for file_path in files:
                 try:
                     try:
-                        img = cv2.imread(file_path)
+                        img = cv2.imread(file_path) # 绝对路径
                         height, width, channel = img.shape
                     except:
                         img = self.cv2_imread(file_path)
@@ -497,8 +498,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.state.img_half = False
         if height > 1500 or width > 1000: # 如果超出[1000,1500]大小的图片要进行缩小，可设置
             self.state.img_half = True
-            height //= 3
-            width //= 3
+            height //= 2
+            width //= 2
         else:
             self.state.img_half = False
         # 控制Tlable大小
@@ -521,7 +522,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # cv2.imwrite(name, self.memory.img_show)
         cv2.imencode('.png', self.memory.img_show)[1].tofile(name)
         self.state.task_end += 1
-        self.ui.img.update()
+        self.ui.img.update() # 更新界面
 
         messagebox.showinfo(title='成功', message=f'图片保存完成\n{self.memory.task_out}\\{name}')
         self.ui.textEdit_3.setText('')
@@ -579,6 +580,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Window.ui.lineEdit_2.setText(str(self.var.word_conf.line_spacing_factor))
         Window.stroke_fill = self.var.word_conf.stroke_fill
         Window.color = self.var.word_conf.color
+        Window.ui.lineEdit_4.setText(str(self.var.word_conf.font_size))
         Window.exec()  # 等待Window推出
         if Window.re[0]:  # 如果dialog是以[0]，确认退出，重写了推出参数
             self.var.word_conf.letter_spacing_factor = Window.re[1]
@@ -586,14 +588,16 @@ class MainWindow(QtWidgets.QMainWindow):
             self.var.word_conf.color = Window.re[3]
             self.var.word_conf.stroke_width = Window.re[4]
             self.var.word_conf.stroke_fill = Window.re[5]
+            self.var.word_conf.font_size = Window.re[6]
             print(
-                f'Info:字距{Window.re[1]}\n文字颜色{Window.re[3]}\n行距{Window.re[2]}\n阴影颜色{Window.re[5]}\n阴影宽度{Window.re[4]}')
+                f'Info:字距{Window.re[1]}\n文字颜色{Window.re[3]}\n行距{Window.re[2]}\n阴影颜色{Window.re[5]}\n阴影宽度{Window.re[4]}\n字体大小{Window.re[6]}')
             # 保存在config当中
             self.config_save('line_spacing_factor', self.var.word_conf.line_spacing_factor)
             self.config_save('letter_spacing_factor', self.var.word_conf.letter_spacing_factor)
             self.config_save('stroke_fill', self.var.word_conf.stroke_fill)
             self.config_save('color', self.var.word_conf.color)
             self.config_save('stroke_width', self.var.word_conf.stroke_width)
+            self.config_save('font_size', self.var.word_conf.font_size)
         Window.destroy()
 
     # 图像修复开关
@@ -731,15 +735,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.var.word_conf.dir = 'h'
             else:
                 self.var.word_conf.dir = 'v' # word_way负责当前文字走向，word_conf.dir负责判断后的文字走向
-            # img = render.Render(img)
-            # img = img.draw(text, self.var.word_conf)
-            # self.memory.img_show = img.copy()
-            try:
-                img = render.Render(img)
-                img = img.draw(text, self.var.word_conf) # 生成基于text的imge，该imge接受字体和text
-                self.memory.img_show = img.copy()  # 记忆image的List
-            except:
-                print('Error:嵌字错误')
+            img = render.Render(img)
+            img = img.draw(text, self.var.word_conf)
+            self.memory.img_show = img.copy()
+            # try:
+            #     img = render.Render(img)
+            #     img = img.draw(text, self.var.word_conf) # 生成基于text的imge，该imge接受字体和text
+            #     self.memory.img_show = img.copy()  # 记忆image的List
+            # except:
+            #     print('Error:嵌字错误')
             # 显示图像
             self.show_img()
         else:
@@ -842,6 +846,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             print('War:任务队列未完成,右下角继续')
 
+    # 填图算法
     def text_clean(self):
         if not self.state.action_running:
             pos = self.get_pos()
@@ -862,8 +867,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.memory.img_show[pos[1]:pos[1] + pos[3], pos[0]:pos[0] + pos[2]] = roi
             else:
                 # 再此处进行白填充
-                white = np.zeros([pos[3], pos[2], 3], dtype=np.uint8) + 255
-                self.memory.img_show[pos[1]:pos[1] + pos[3], pos[0]:pos[0] + pos[2]] = white
+                white = np.zeros([pos[3], pos[2], 3], dtype=np.uint8) + 255 # 3 通道
+                img1_cv2_temp = self.memory.img_show[pos[1]:pos[1] + pos[3], pos[0]:pos[0] + pos[2]] # 注意此处是【w,h】
+                blue, green, red = bincount_1(img1_cv2_temp)
+                self.shelltext('red: '+ str(red)+'blue: '+ str(blue)+'green: '+str(green))
+                self.shelltext('white: '+str(white))
+                tempImage = Image.fromarray(cv2.cvtColor(self.memory.img_show,cv2.COLOR_BGR2RGB))
+                draw_img = ImageDraw.Draw(tempImage)
+                draw_img.rectangle(
+                    ((pos[0],pos[1]),((pos[0]+pos[2]),(pos[1]+pos[3]))),
+                    fill=(red, green, blue),  # (red,green,blue)
+                    outline=None)
+                self.memory.img_show = cv2.cvtColor(np.array(tempImage),cv2.COLOR_RGB2BGR)
+                # white = np.full([pos[3], pos[2], 3], fill_value=[red, green, red],dtype=np.uint8)  # 3 通道
+                # self.shelltext(str(white)+''+str(red))
+                # self.memory.img_show[pos[1]:pos[1] + pos[3], pos[0]:pos[0] + pos[2]] = white
             print('Info:图像修复完成')
             # 显示图像
             self.show_img()
@@ -897,8 +915,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def show_img(self):
         if self.state.img_half:
             height, width, channel = self.memory.img_show.shape # 所有对图像的操作只是copy
-            height //= 3
-            width //= 3
+            height //= 2
+            width //= 2
             img = cv2.resize(self.memory.img_show, (width, height))
             print('show_Img调用成功')
         else:
@@ -1015,6 +1033,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.var.word_conf.stroke_fill = config.get('var', 'stroke_fill')
         self.var.word_conf.line_spacing_factor = config.getfloat('var', 'line_spacing_factor')
         self.var.word_conf.letter_spacing_factor = config.getfloat('var', 'letter_spacing_factor')
+        self.var.word_conf.font_size = config.getint('var','font_size')
 
 
 # 字距设置窗口
@@ -1031,21 +1050,22 @@ class CharacterStyle(QtWidgets.QDialog):
         self.ui.lineEdit.setValidator(QtGui.QDoubleValidator())
         self.ui.lineEdit_2.setValidator(QtGui.QDoubleValidator())
         self.ui.lineEdit_3.setValidator(QtGui.QIntValidator())
+        self.ui.lineEdit_4.setValidator(QtGui.QIntValidator())
 
         self.ui.pushButton.clicked.connect(self.ok)
         self.ui.pushButton_1.clicked.connect(self.change_word_colour)
         self.ui.pushButton_2.clicked.connect(self.close)
         self.ui.pushButton_3.clicked.connect(self.change_shadow_colour)
-        self.re = [False, 0, 0, '', 0, '']  # 退出是传输的的元组，需要再此处更新
+        self.re = [False, 0, 0, '', 0, '', 0]  # 退出是传输的的元组，需要再此处更新
 
     def ok(self):
         # 以元组的形式传递图像参数
         self.re = [True, float(self.ui.lineEdit.text()), float(self.ui.lineEdit_2.text()), self.color,
-                   int(self.ui.lineEdit_3.text()), self.stroke_fill]
+                   int(self.ui.lineEdit_3.text()), self.stroke_fill, int(self.ui.lineEdit_4.text())]
         self.accept()
 
     def close(self):
-        self.re = [False, 0, 0, '', 0, '']
+        self.re = [False, 0, 0, '', 0, '', 0]
         self.reject()
 
     def change_word_colour(self):

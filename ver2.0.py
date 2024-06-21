@@ -220,6 +220,14 @@ def draw_ocr_box_txt_one_pic(image,
     img_merge = Image.blend(img_left, img_right, 0.5)
     con_enhancer = ImageEnhance.Contrast(img_merge)
     img_merge = con_enhancer.enhance(2.5)  # 对比度增强
+    # 此处进行图像缩小
+
+    img_merge = cv2.cvtColor(np.asarray(img_merge), cv2.COLOR_RGB2BGR)
+    scale_num = 0.5
+    dist_size = (int(scale_num * img_merge.shape[0]), int(scale_num * img_merge.shape[1]))
+    cv_image = resize_keep_aspectratio(img_merge, dist_size)  # 对文件进行等比放大
+    img_merge = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
+
     return img_merge  # 返回Image对象
     # return img_show
 
@@ -500,7 +508,6 @@ if __name__ == '__main__':
     # DATA
     file_path = 'D:/testPics/OriginPicJPG/'  # f翻译目录源文件,记得加'/'
     file_resize_path = 'D:/testPics/OCR_translated_resize/'
-    file_name = 'test2Totall-'
     save_folder = 'D:/testPics/OCR_translated'
     font_path = './fonts/simfang.ttf'  # PaddleOCR下提供字体包
 
@@ -534,7 +541,6 @@ if __name__ == '__main__':
             image.save(dic_path_resize)  # 同名保存
         pictures_resize = os.listdir(path=file_resize_path)
 
-    pic_num = 0
     for pic in pictures_resize:
         dic_path = file_resize_path + pic
 
@@ -558,11 +564,10 @@ if __name__ == '__main__':
 
         im_show = draw_ocr_box_txt_one_pic(image, boxes, txts, text_blocks, scores, drop_score=0.80,
                                            font_path=font_path)
-        im_show.show()
+        # im_show.show()
         # 保存
-        path = save_folder + '/' + file_name + str(pic_num) + '.png'
-        # im_show.save(path)
-        pic_num += 1
+        path = save_folder + '/' + pic + '.png'
+        im_show.save(path)
         print(path + '处理完成！')
 
 
