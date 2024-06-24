@@ -542,7 +542,7 @@ class Ui_MainWindow(object):
 "<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>"))
         self.pushButton_5.setText(_translate("MainWindow", "确认"))
         self.pushButton_15.setText(_translate("MainWindow", "取消"))
-        self.pushButton_4.setText(_translate("MainWindow", "自动翻译"))
+        self.pushButton_4.setText(_translate("MainWindow", "文字识别"))
         self.pushButton_6.setText(_translate("MainWindow", "下一张,并保存"))
         self.pushButton_2.setText(_translate("MainWindow", "排列:垂直"))
         self.label.setText(_translate("MainWindow", "当前队列:"))

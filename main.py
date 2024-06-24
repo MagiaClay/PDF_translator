@@ -12,6 +12,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw
 from PyQt6 import QtWidgets, QtCore, QtGui
+from paddleocr import PaddleOCR
 
 from translate import translate, change_translate_mod
 from covermaker import conf, render
@@ -171,7 +172,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.pushButton_15.clicked.connect(lambda event: self.closeit())
 
         # 将翻译功能diable
-        self.ui.pushButton_4.setEnabled(False)
+        # self.ui.pushButton_4.setEnabled(False)
+        self.ui.pushButton_3.setEnabled(False)
 
     # 其他线程
     def thredstart(self):
@@ -278,47 +280,50 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.actionja.setChecked(True)
         elif language == 'en':
             import paddleocr
-            self.memory.model = paddleocr.PaddleOCR(
-                show_log=True,  # 禁用日志
-                use_gpu=False,  # 使用gpu
-                cls=False,  # 角度分类
-                det_limit_side_len=320,  # 检测算法前向时图片长边的最大尺寸，
-                det_limit_type='max',  # 限制输入图片的大小,可选参数为limit_type[max, min] 一般设置为 32 的倍数，如 960。
-                ir_optim=False,
-                use_fp16=False,  # 16位半精度
-                use_tensorrt=False,  # 使用张量
-                gpu_mem=6000,  # 初始化占用的GPU内存大小
-                cpu_threads=20,
-                enable_mkldnn=True,  # 是否启用mkldnn
-                max_batch_size=512,  # 图片尺寸最大大小
-                cls_model_dir='paddleocr/model/cls',
-                # cls模型位置
-                # image_dir="",  # 通过命令行调用时间执行预测的图片或文件夹路径
-                det_algorithm='DB',  # 使用的检测算法类型DB/EAST
-                det_model_dir='paddleocr/model/det/det_infer',
-                # 检测模型所在文件夹。传参方式有两种，1. None: 自动下载内置模型到 ~/.paddleocr/det；2.自己转换好的inference模型路径，模型路径下必须包含model和params文件
-                # DB(还有east,SAST)
-                det_db_thresh=0.3,  # DB模型输出预测图的二值化阈值
-                det_db_box_thresh=0.6,  # DB模型输出框的阈值，低于此值的预测框会被丢弃
-                det_db_unclip_ratio=1.3,  # DB模型输出框扩大的比例
-                use_dilation=True,  # 缩放图片
-                det_db_score_mode="fast",  # 计算分数模式,fast对应原始的rectangle方式，slow对应polygon方式。
-                # 文本识别器的参数
-                rec_algorithm='CRNN',  # 使用的识别算法类型
-                rec_model_dir='paddleocr/model/rec/ch_rec_infer',
-                # 识别模型所在文件夹。传承那方式有两种，1. None: 自动下载内置模型到 ~/.paddleocr/rec；2.自己转换好的inference模型路径，模型路径下必须包含model和params文件
-                # rec_image_shape="3,32,320",  # 识别算法的输入图片尺寸
-                # cls_batch_num=36,  #
-                # cls_thresh=0.9,  #
-                lang='ch',  # 语言(这个用的是中英模型)
-                det=True,  # 检测文字位置
-                rec=True,  # 识别文字内容
-                use_angle_cls=False,  # 识别竖排文字
-                rec_batch_num=36,  # 进行识别时，同时前向的图片数
-                max_text_length=30,  # 识别算法能识别的最大文字长度
-                # rec_char_dict_path='',  # 识别模型字典路径，当rec_model_dir使用方自己模型时需要
-                use_space_char=True,  # 是否识别空格
-            )
+            self.memory.model = PaddleOCR(use_angle_cls=True, lang="ch",
+                    use_gpu=False, show_log=False)  # need to run only once to download and load model into memory
+            # self.memory.model = paddleocr.PaddleOCR(
+            #     show_log=True,  # 禁用日志
+            #     use_gpu=False,  # 使用gpu
+            #     cls=False,  # 角度分类
+            #     det_limit_side_len=320,  # 检测算法前向时图片长边的最大尺寸，
+            #     det_limit_type='max',  # 限制输入图片的大小,可选参数为limit_type[max, min] 一般设置为 32 的倍数，如 960。
+            #     ir_optim=False,
+            #     use_fp16=False,  # 16位半精度
+            #     use_tensorrt=False,  # 使用张量
+            #     gpu_mem=6000,  # 初始化占用的GPU内存大小
+            #     cpu_threads=10,
+            #     enable_mkldnn=True,  # 是否启用mkldnn
+            #     max_batch_size=512,  # 图片尺寸最大大小
+            #     cls_model_dir='paddleocr/model/cls',
+            #     # cls模型位置
+            #     # image_dir="",  # 通过命令行调用时间执行预测的图片或文件夹路径
+            #     det_algorithm='DB',  # 使用的检测算法类型DB/EAST
+            #     det_model_dir='paddleocr/model/det/det_infer',
+            #     # 检测模型所在文件夹。传参方式有两种，1. None: 自动下载内置模型到 ~/.paddleocr/det；2.自己转换好的inference模型路径，模型路径下必须包含model和params文件
+            #     # DB(还有east,SAST)
+            #     det_db_thresh=0.3,  # DB模型输出预测图的二值化阈值
+            #     det_db_box_thresh=0.6,  # DB模型输出框的阈值，低于此值的预测框会被丢弃
+            #     det_db_unclip_ratio=1.3,  # DB模型输出框扩大的比例
+            #     use_dilation=True,  # 缩放图片
+            #     det_db_score_mode="slow",  # 计算分数模式,fast对应原始的rectangle方式，slow对应polygon方式。
+            #     # 文本识别器的参数
+            #     rec_algorithm='CRNN',  # 使用的识别算法类型
+            #     rec_model_dir='paddleocr/model/rec/ch_rec_infer',
+            #     # 识别模型所在文件夹。传承那方式有两种，1. None: 自动下载内置模型到 ~/.paddleocr/rec；2.自己转换好的inference模型路径，模型路径下必须包含model和params文件
+            #     # rec_image_shape="3,32,320",  # 识别算法的输入图片尺寸
+            #     # cls_batch_num=36,  #
+            #     # cls_thresh=0.9,  #
+            #     lang='ch',  # 语言(这个用的是中英模型)
+            #     det=True,  # 检测文字位置
+            #     rec=True,  # 识别文字内容
+            #     use_angle_cls=False,  # 识别竖排文字
+            #     rec_batch_num=36,  # 进行识别时，同时前向的图片数
+            #     max_text_length=30,  # 识别算法能识别的最大文字长度
+            #     # rec_char_dict_path='',  # 识别模型字典路径，当rec_model_dir使用方自己模型时需要
+            #     use_space_char=True,  # 是否识别空格
+            # )
+
             self.ui.actionen.setChecked(True)
         elif language == 'ko':
             import paddleocr
@@ -461,7 +466,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.state.task_num > 0:
             self.ui.img.flag_switch = True
             self.ui.img_origin.flag_switch = True
-            self.ui.pushButton_4.setEnabled(False)
+            self.ui.pushButton_4.setEnabled(True)
             self.ui.pushButton_14.setEnabled(True)
             self.ui.pushButton_12.setEnabled(True)
             self.ui.pushButton_9.setEnabled(True)
@@ -676,7 +681,8 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.state.text_running:
                 self.do_add_text()  # 如果是需要嵌字模式，则调用嵌字函数
             else:
-                self.do_translation()
+                pass
+                # self.do_translation()
 
     # 进行翻译
     def do_translation(self):
@@ -745,10 +751,19 @@ class MainWindow(QtWidgets.QMainWindow):
     # 添加文本功能, 将文本写到指定地区
     def do_add_text(self):
         text = self.ui.textEdit_2.toPlainText()  # 获取text文本，此处是否输入含'\n'的文本内容
+        pos = self.get_pos()
+        img1_cv2_temp = self.memory.img_show[pos[1]:pos[1] + pos[3], pos[0]:pos[0] + pos[2]]  # 注意此处是【w,h】
+        blue, green, red = bincount_1(img1_cv2_temp)
+        tempImage = Image.fromarray(cv2.cvtColor(self.memory.img_show, cv2.COLOR_BGR2RGB))
+        draw_img = ImageDraw.Draw(tempImage)
+        draw_img.rectangle(
+            ((pos[0], pos[1]), ((pos[0] + pos[2]), (pos[1] + pos[3]))),
+            fill=(red, green, blue),  # (red,green,blue)
+            outline=None)
+        self.memory.img_show = cv2.cvtColor(np.array(tempImage), cv2.COLOR_RGB2BGR)
         if text.replace(" ", "") != '':  # 如果输入的文本部位空
             img = self.memory.img_show.copy()  # 从memory获得当前的图片
-
-            pos = self.memory.textline_box[0]  # 获得当前鼠标画出的矩形窗, 均统计为POS[x, y, w, h]
+            # pos = self.memory.textline_box[0]  # 获得当前鼠标画出的矩形窗, 均统计为POS[x, y, w, h]
             if pos is None: print('Error:boxError')  # pos符合条件
             self.var.word_conf.box = conf.Box(pos[0], pos[1], pos[2], pos[3])  # 利用pos生成一个box类，记录坐上坐标、右下坐标和宽高，将其类反正该字体类里
 
@@ -825,29 +840,38 @@ class MainWindow(QtWidgets.QMainWindow):
                 box = textline_box[0]
                 print('Info:当前区域检测有多段文字\n文字输出排列强制自动\n请多次确认翻译')
 
-            result = self.memory.model(self.memory.img_show[box[1]:box[3] + box[1], box[0]:box[2] + box[0]]) # 此处出问题，返回文本为NOne
+            # result = self.memory.model(self.memory.img_show[box[1]:box[3] + box[1], box[0]:box[2] + box[0]]) # 此处出问题，返回文本为NOne
+            cv_temp_pic = self.memory.img_show[box[1]:box[3] + box[1], box[0]:box[2] + box[0]]
+            cv2.imwrite('./sniptemp.png', cv_temp_pic)
+            print('临时图片保存成功')
+            result = self.memory.model.ocr('./sniptemp.png', cls=True)
+
             if self.var.img_language == 'ja':
                 self.ui.textEdit.setText(result)
             else:  # 使用PaddleOCR的情况
                 str = ''
-                for i in result[1]:
-                    str = str + i[0]
+                txts = [line[1][0] for line in result[0]]
+                for p in txts:
+                    str += p
                 result = str
-                self.ui.textEdit.setText(result)
+                # self.ui.textEdit.setText(result)
+
             if result.replace(" ", "") == '':
                 print('Info:文字识别异常,请手动输入')
-                self.ui.textEdit_2.setText('')
+                self.ui.textEdit_2.setText('识别异常')
             else:
-                with eventlet.Timeout(10, False):
-                    self.ui.textEdit_2.setText(translate(result, f'{self.var.word_language}', "auto"))
+                pass
+                # with eventlet.Timeout(10, False):
+                #     self.ui.textEdit_2.setText(translate(result, f'{self.var.word_language}', "auto"))
                 if self.ui.textEdit_2.toPlainText() == '':
-                    self.ui.textEdit_2.setText('翻译超时')
+                    self.ui.textEdit_2.setText(result)
 
             self.state.action_running = True
+            self.state.text_running = True
             self.ui.pushButton_5.setEnabled(True)
             self.ui.pushButton_15.setEnabled(True)
             self.ui.pushButton.setEnabled(True)
-            self.ui.pushButton_3.setEnabled(True)
+            self.ui.pushButton_3.setEnabled(False)
         else:
             print('War:任务队列未完成,右下角继续')
 
@@ -924,7 +948,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             print('War:任务队列未完成,右下角继续')
 
-    # 提取box
+    # 提取box，会根据缩放倍率选择需要获取的pos大小
     def get_pos(self):  # pos[0] : x pos[1]:y
 
         pos = self.memory.range_choice = self.ui.img.img_pos

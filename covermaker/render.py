@@ -34,6 +34,7 @@ class Render(object):
             return
         # 对文本进行排版, 如果设置的字体大小小于5则启用大小适应
         if section.font_size <= 5:
+            print('嵌字模式1')
             if len(text.splitlines()) > 1:  # 按照'\n'经行分行，如何识别需要分行未定义，如果行数大于1
                 # 绘制文本分为两种情况：
                 # 情况一：需要缩小大小的多行文本(包含'\n')，逐行绘制，字体大小无法控制,且只能对换行进行缩小，无法进行缩小
@@ -91,6 +92,7 @@ class Render(object):
                                         stroke_fill=section.stroke_fill)
         else:
             # 此处进行特定字体的绘制,返回的是整张绘制好的图片
+            print('嵌字模式2')
             img_cv = cv2.cvtColor(np.array(self._img), cv2.COLOR_RGB2BGR) # 注意此处所填的位置应该是涂白的
             img_cv_text = draw_box_txt_fine((self._img.width, self._img.height), text, './covermaker/fonts/'+section.font,
                                             text_size_ocr=section.font_size,

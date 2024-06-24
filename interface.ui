@@ -399,7 +399,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
         </font>
        </property>
        <property name="text">
-        <string>自动翻译</string>
+        <string>文字识别</string>
        </property>
        <property name="checkable">
         <bool>false</bool>
