@@ -6,6 +6,7 @@ import string
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 from paddleocr import PaddleOCR
+from utils import pyMuPDF_fitz, get_merged_pdf
 
 from multiprocessing import freeze_support
 import translators as ts
@@ -506,41 +507,48 @@ if __name__ == '__main__':
         translated_text_list.append(row_Data_2)
 
     # DATA
-    file_path = 'D:/testPics/OriginPicJPG/'  # f翻译目录源文件,记得加'/'
+    file_path = 'D:/testPics/PDFtoPIC/'  # f翻译目录源文件,记得加'/'
+    file_path_1 = 'D:/testPics/PDFtoPIC'
     file_resize_path = 'D:/testPics/OCR_translated_resize/'
     save_folder = 'D:/testPics/OCR_translated'
     font_path = './fonts/simfang.ttf'  # PaddleOCR下提供字体包
+    pdfPath = 'D:/testPics/原文档.pdf' # 唯一需要改动的路径。只要保持D盘文
+
+    # PDF转图片
+    pyMuPDF_fitz(pdfPath, file_path_1)
 
     pictures = os.listdir(path=file_path)
     pictures_resize = os.listdir(path=file_resize_path)
     if len(pictures_resize) == 0 :  # 如果未处理过则处理
         for pic in pictures:
-            dic_path = file_path + pic
-            dic_path_resize = file_resize_path + pic
-            # 经行双三次插值对图像进行放大
-            cv_image = cv2.imread(dic_path, 1)
-            scale_num = 2
-            dist_size = (2 * cv_image.shape[0], 2 * cv_image.shape[1])
-            cv_image = resize_keep_aspectratio(cv_image, dist_size)  # 对文件进行等比放大
-            image = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
-            image.save(dic_path_resize)  # 同名保存
+            if pic.endswith('.jpg') or pic.endswith('.png'):
+                dic_path = file_path + pic
+                dic_path_resize = file_resize_path + pic
+                # 经行双三次插值对图像进行放大
+                cv_image = cv2.imread(dic_path, 1)
+                scale_num = 2
+                dist_size = (2 * cv_image.shape[0], 2 * cv_image.shape[1])
+                cv_image = resize_keep_aspectratio(cv_image, dist_size)  # 对文件进行等比放大
+                image = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
+                image.save(dic_path_resize)  # 同名保存
         pictures_resize = os.listdir(path=file_resize_path)
     else:
         for pic in pictures_resize:
             dic_path_resize = file_resize_path + pic
             os.remove(dic_path_resize)
         for pic in pictures:
-            dic_path = file_path + pic
-            dic_path_resize = file_resize_path + pic
-            # 经行双三次插值对图像进行放大
-            cv_image = cv2.imread(dic_path, 1)
-            scale_num = 2
-            dist_size = (2 * cv_image.shape[0], 2 * cv_image.shape[1])
-            cv_image = resize_keep_aspectratio(cv_image, dist_size)  # 对文件进行等比放大
-            image = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
-            image.save(dic_path_resize)  # 同名保存
+            if pic.endswith('.jpg') or pic.endswith('.png'):
+                dic_path = file_path + pic
+                dic_path_resize = file_resize_path + pic
+                # 经行双三次插值对图像进行放大
+                cv_image = cv2.imread(dic_path, 1)
+                scale_num = 2
+                dist_size = (2 * cv_image.shape[0], 2 * cv_image.shape[1])
+                cv_image = resize_keep_aspectratio(cv_image, dist_size)  # 对文件进行等比放大
+                image = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
+                image.save(dic_path_resize)  # 同名保存
         pictures_resize = os.listdir(path=file_resize_path)
-
+    print('预处理完成。')
     for pic in pictures_resize:
         dic_path = file_resize_path + pic
 
@@ -566,8 +574,10 @@ if __name__ == '__main__':
                                            font_path=font_path)
         # im_show.show()
         # 保存
-        path = save_folder + '/' + pic + '.png'
+        path = save_folder + '/' + pic
         im_show.save(path)
         print(path + '处理完成！')
+    # 图片转PDF
+    get_merged_pdf(save_folder)
 
 

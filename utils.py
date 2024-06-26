@@ -1,8 +1,15 @@
 import math
-
 import cv2
 from PIL import ImageFont, Image, ImageDraw
 import numpy as np
+import datetime
+import os
+import glob
+import fitz
+import PyPDF2
+
+# 防止字符串乱码
+os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 
 
 def compute_iou(gt_box, b_box):
@@ -33,9 +40,9 @@ def compute_iou(gt_box, b_box):
     return iou
 
 
-# 此处进
+# 绘制字体函数
 def draw_box_txt_fine(img_size, txt, font_path="./fonts/simfang.ttf", is_multiline=True, box=None,
-                      multi_box=None, text_size_ocr = 25):  # multi_box(width,height)
+                      multi_box=None, text_size_ocr=25):  # multi_box(width,height)
     def create_font(txt, sz, font_path="./fonts/simfang.ttf", text_size_ocr=25, is_multiline=False):  # 正常【width,height】
         # font_size = int(sz[1] * 0.85)  # 获得宽，中文文本可在此处调节
         is_overflow = False  # 是否越界
@@ -134,7 +141,8 @@ def draw_box_txt_fine(img_size, txt, font_path="./fonts/simfang.ttf", is_multili
             draw_text = ImageDraw.Draw(img_text)
             if txt:
                 font, sz, space_txt, is_overflow = create_font(txt, (box_width, box_height),
-                                                               font_path, is_multiline=is_multiline, text_size_ocr=text_size_ocr)
+                                                               font_path, is_multiline=is_multiline,
+                                                               text_size_ocr=text_size_ocr)
                 draw_text.multiline_text([0, 0], space_txt, fill=(0, 0, 0), font=font)  # 从(0,0）开始绘制
         else:
             img_text = Image.new('RGB', (box_width, box_height), (255, 255, 255))
@@ -175,6 +183,8 @@ def draw_box_txt_fine(img_size, txt, font_path="./fonts/simfang.ttf", is_multili
 
     return img_right_text  # 图片是一个整张大小图片
 
+
+# 填充图片
 def bincount_1(pic_path):
     img = pic_path
 
@@ -198,3 +208,79 @@ def bincount_1(pic_path):
     red = np.argmax(red_count) + 1
 
     return blue, green, red
+
+
+# 图片转PDF
+def get_merged_pdf(imgs_path):
+    # 将图片转换为PDF文件
+    def convert_pic_pdf(img_path, pdf_path):
+        for img in sorted(glob.glob(img_path)):
+            doc = fitz.open()
+            imgdoc = fitz.open(img)
+            pdfbytes = imgdoc.convert_to_pdf()
+            imgpdf = fitz.open("pdf", pdfbytes)
+            doc.insert_pdf(imgpdf)
+            if not os.path.exists(pdf_path):
+                doc.save(pdf_path)
+
+    save_pdf_path = os.path.join(imgs_path, 'pdf')
+    img_names_list = os.listdir(imgs_path)
+    pic_name_list = ['.jpg', '.png', '.bmp', '.jpeg', '.JPG', '.PNG', '.JPEG']
+    img_n_list = [name for name in img_names_list if os.path.splitext(name)[-1] in pic_name_list]
+    for img_n in img_n_list:
+        img_p = os.path.join(imgs_path, img_n)
+        pdf_n = os.path.splitext(img_n)[0] + '.pdf'
+        pdf_p = os.path.join(save_pdf_path, pdf_n)
+        if not os.path.exists(save_pdf_path):
+            os.makedirs(save_pdf_path)
+        convert_pic_pdf(img_p, pdf_p)
+
+    # 将pdf合并成一个pdf
+    pdf_names_list = os.listdir(save_pdf_path)
+    pdf_writer = PyPDF2.PdfWriter()
+    for pdf_n in pdf_names_list:
+        pdf_p = os.path.join(save_pdf_path, pdf_n)
+        pdf_obj = open(pdf_p, 'rb')
+        pdf_reader = PyPDF2.PdfReader(pdf_obj)
+        for page in range(len(pdf_reader.pages)):
+            pdf_writer.add_page(pdf_reader.pages[page])
+    combine_pdf_path = os.path.join(imgs_path, 'all_pics.pdf')
+    pdf_output_file = open(combine_pdf_path, 'wb')
+    pdf_writer.write(pdf_output_file)
+    pdf_output_file.close()
+    return combine_pdf_path
+
+
+# PDF转图片
+def pyMuPDF_fitz(pdfPath, imagePath):
+    startTime_pdf2img = datetime.datetime.now()  # 开始时间
+    # print("imagePath=" + imagePath)
+    pdfDoc = fitz.open(pdfPath)
+    for pg in range(pdfDoc.page_count):
+        page = pdfDoc[pg]
+        rotate = int(0)
+        # 每个尺寸的缩放系数为1.3，这将为我们生成分辨率提高2.6的图像。
+        # 此处若是不做设置，默认图片大小为：792X612, dpi=96
+        zoom_x = 1.33333333  # (1.33333333-->1056x816)   (2-->1584x1224)
+        zoom_y = 1.33333333
+        mat = fitz.Matrix(zoom_x, zoom_y).prerotate(rotate)
+        pix = page.get_pixmap(matrix=mat, alpha=False)
+
+        if not os.path.exists(imagePath):  # 判断存放图片的文件夹是否存在
+            os.makedirs(imagePath)  # 若图片文件夹不存在就创建
+
+        pix.pil_save(imagePath + '/' + 'images_%s.png' % pg)  # 将图片写入指定的文件夹内
+
+    endTime_pdf2img = datetime.datetime.now()  # 结束时间
+    # print('pdf2img时间=', (endTime_pdf2img - startTime_pdf2img).seconds)
+
+
+if __name__ == "__main__":
+    # 1、PDF地址
+    pdfPath = 'D:/testPics/原文档.pdf'
+    # 2、需要储存图片的目录
+    imagePath = 'D:/testPics/PDFtoPIC'  # 不用加/
+    pyMuPDF_fitz(pdfPath, imagePath)
+
+    # 将图像保存为PDF, 保存路径为源目录
+    get_merged_pdf(imagePath)

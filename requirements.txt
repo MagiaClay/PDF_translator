@@ -19,6 +19,8 @@ eventlet
 pytorch
 translator
 layoutparser
+img2pdf
+PyPDF2
 
 # ----------------------Ignored dependent packages---------------------
 #altgraph==0.17.2

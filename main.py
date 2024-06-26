@@ -126,8 +126,9 @@ class MainWindow(QtWidgets.QMainWindow):
     # 控制台输出到text
     def shelltext(self, text):
         if text != '\n':
-            self.ui.textEdit_3.append(text)
-            self.ui.textEdit_3.moveCursor(QtGui.QTextCursor.MoveOperation.End)
+            pass
+            # self.ui.textEdit_3.append(text)
+            # self.ui.textEdit_3.moveCursor(QtGui.QTextCursor.MoveOperation.End)
 
     # 槽
     def uireadly(self):
@@ -162,18 +163,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.pushButton_14.clicked.connect(lambda event: self.text_add())
         self.ui.pushButton_12.clicked.connect(lambda event: self.text_clean())
         self.ui.pushButton_9.clicked.connect(lambda event: self.auto_text_clean())
-        self.ui.pushButton_10.clicked.connect(lambda event: self.auto_translation())
+        # self.ui.pushButton_10.clicked.connect(lambda event: self.auto_translation())
         self.ui.pushButton_7.clicked.connect(lambda event: self.cancel())
         self.ui.pushButton_6.clicked.connect(lambda event: self.save())
 
-        self.ui.pushButton.clicked.connect(lambda event: self.tts())
-        self.ui.pushButton_3.clicked.connect(lambda event: self.change_translate_mod())
+        # self.ui.pushButton.clicked.connect(lambda event: self.tts())
+        # self.ui.pushButton_3.clicked.connect(lambda event: self.change_translate_mod())
         self.ui.pushButton_5.clicked.connect(lambda event: self.doit())
         self.ui.pushButton_15.clicked.connect(lambda event: self.closeit())
 
         # 将翻译功能diable
         # self.ui.pushButton_4.setEnabled(False)
-        self.ui.pushButton_3.setEnabled(False)
+        # self.ui.pushButton_3.setEnabled(False)
 
     # 其他线程
     def thredstart(self):
@@ -502,7 +503,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.img.setStyleSheet('background-color:rgb(255,255,255);\ncolor:rgba(0,0,0,0);')
         self.ui.img_origin.setStyleSheet('background-color:rgb(255,255,255);\ncolor:rgba(0,0,0,0);')
         img_origin_path = self.memory.task_name[self.state.task_end]
-        filepath = 'D:/testPics/OriginPicJPG/' + os.path.split(img_origin_path)[1]  # 获取文件名
+        filepath = 'D:/testPics/PDFtoPIC/' + os.path.split(img_origin_path)[1]
+        # 注意此处源文件副本存放的路径，之后会把副本
+        # 文件存放在指定布鲁下
         try:
             img_origin = cv2.imread(filepath)
             height_o, width_o, channel_o = img_origin.shape
@@ -552,7 +555,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.img.update()  # 更新界面
 
         messagebox.showinfo(title='成功', message=f'图片保存完成\n{self.memory.task_out}\\{name}')
-        self.ui.textEdit_3.setText('')
+        # self.ui.textEdit_3.setText('')
         print(f'Info:图片保存完成\n{name}')
 
         if self.state.task_end < self.state.task_num:
@@ -786,13 +789,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.show_img()
         else:
             print('War:未输入文字')
-        self.ui.textEdit.setText('')
+        # self.ui.textEdit.setText('')
         self.ui.textEdit_2.setText('')
         self.state.text_running = self.state.action_running = False
         self.ui.pushButton_5.setEnabled(False)
         self.ui.pushButton_15.setEnabled(False)
-        self.ui.pushButton.setEnabled(False)
-        self.ui.pushButton_3.setEnabled(False)
+        # self.ui.pushButton.setEnabled(False)
+        # self.ui.pushButton_3.setEnabled(False)
 
     def closeit(self):
         self.state.action_running = False
@@ -870,8 +873,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.state.text_running = True
             self.ui.pushButton_5.setEnabled(True)
             self.ui.pushButton_15.setEnabled(True)
-            self.ui.pushButton.setEnabled(True)
-            self.ui.pushButton_3.setEnabled(False)
+            # self.ui.pushButton.setEnabled(True)
+            # self.ui.pushButton_3.setEnabled(False)
         else:
             print('War:任务队列未完成,右下角继续')
 
@@ -884,7 +887,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.memory.textline_box = []
             self.memory.textline_box.append(pos)
 
-            self.ui.textEdit.setText('下方输入文字')
+            # self.ui.textEdit.setText('下方输入文字')
             # self.ui.textEdit_2.setText('')
             self.state.action_running = True
             self.ui.pushButton_5.setEnabled(True)
