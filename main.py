@@ -20,7 +20,7 @@ from inpainting import Inpainting
 from interface import Ui_MainWindow
 from characterStyle import Ui_Dialog as CharacterStyleDialog
 from textblockdetector import dispatch as textblockdetector
-from utils import compute_iou, bincount_1
+from utils import compute_iou, bincount_1, get_merged_pdf, del_dir
 
 # tkinter弹窗初始化，标准GUI库，用于解决字体弹窗
 root = Tk()
@@ -84,6 +84,12 @@ class state():
 
 
 # 主程序
+def cv2_imread(path):
+    img = Image.open(path)
+    img = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+    return img
+
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -99,6 +105,7 @@ class MainWindow(QtWidgets.QMainWindow):
         print('这里是控制台')
         self.uireadly()  # 初始化按钮槽
         self.thredstart()  # 开始线程
+        self.ram_ready()  # 清楚缓存
 
     def mouseMoveEvent(self, e: QtGui.QMouseEvent):  # 重写移动事件
         if self._tracking:
@@ -118,10 +125,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self._endPos = None
 
     # 读取图像，解决imread不能读取中文路径的问题，转换为numpy格式
-    def cv2_imread(self, path):
-        img = Image.open(path)
-        img = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
-        return img
 
     # 控制台输出到text
     def shelltext(self, text):
@@ -130,6 +133,10 @@ class MainWindow(QtWidgets.QMainWindow):
             # self.ui.textEdit_3.append(text)
             # self.ui.textEdit_3.moveCursor(QtGui.QTextCursor.MoveOperation.End)
 
+    # 用于清除out文件中的缓存
+    def ram_ready(self):
+        out_path = 'D:/testPics/out/'
+        del_dir(out_path)
     # 槽
     def uireadly(self):
         self.ui.action1.triggered.connect(
@@ -282,7 +289,8 @@ class MainWindow(QtWidgets.QMainWindow):
         elif language == 'en':
             import paddleocr
             self.memory.model = PaddleOCR(use_angle_cls=True, lang="ch",
-                    use_gpu=False, show_log=False)  # need to run only once to download and load model into memory
+                                          use_gpu=False,
+                                          show_log=False)  # need to run only once to download and load model into memory
             # self.memory.model = paddleocr.PaddleOCR(
             #     show_log=True,  # 禁用日志
             #     use_gpu=False,  # 使用gpu
@@ -419,13 +427,16 @@ class MainWindow(QtWidgets.QMainWindow):
                         img = cv2.imread(file_path)  # 绝对路径
                         height, width, channel = img.shape
                     except:
-                        img = self.cv2_imread(file_path)
+                        img = cv2_imread(file_path)
                         height, width, channel = img.shape
                     if channel == 1:
                         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+                    cv2.imwrite(
+                        filename='D:/testPics/out/' + f'{os.path.splitext(os.path.basename(file_path))[0]}' + '.png',
+                        img=img)  # 将文件存储
                     self.memory.task_img.append(img)
                     self.state.task_num += 1
-                    self.memory.task_name.append(f'{os.path.splitext(os.path.basename(file_path))[0]}')
+                    self.memory.task_name.append(f'{os.path.splitext(os.path.basename(file_path))[0]}' + '.png')
                     # self.shelltext(file_path) # 此处是绝对路径
                 except:
                     messagebox.showerror(title='Error', message=f'{file_path}图片读取Error')
@@ -447,16 +458,17 @@ class MainWindow(QtWidgets.QMainWindow):
                     img = cv2.imread(path)
                     height, width, channel = img.shape
                 except:
-                    img = self.cv2_imread(path)
+                    img = cv2_imread(path)
                     height, width, channel = img.shape
                 if channel == 1:
                     img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+                cv2.imwrite('D:/testPics/out/' + f'{root}' + ext, img=img)  # 将文件存储
                 self.memory.task_img.append(img)
                 self.state.task_num = 1
                 self.state.task_end = 0
                 self.memory.task_out = os.path.dirname(path)
                 self.memory.task_name = []
-                self.memory.task_name.append(f'{root}')
+                self.memory.task_name.append(f'{root}' + ext)
                 self.panel_shownext()
                 print(f'Info:成功导入{self.state.task_num}张图片')
             except:
@@ -472,6 +484,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.pushButton_12.setEnabled(True)
             self.ui.pushButton_9.setEnabled(True)
             self.ui.pushButton_6.setEnabled(True)
+
+    def save_PDF(self, filePath):
+        get_merged_pdf(filePath)
 
     # 读取字体
     def change_font(self):
@@ -510,7 +525,7 @@ class MainWindow(QtWidgets.QMainWindow):
             img_origin = cv2.imread(filepath)
             height_o, width_o, channel_o = img_origin.shape
         except:
-            img_origin = self.cv2_imread(filepath)
+            img_origin = cv2_imread(filepath)
             height_o, width_o, channel_o = img_origin.shape
         if channel_o == 1:
             img_origin = cv2.cvtColor(img_origin, cv2.COLOR_GRAY2RGB)
@@ -550,13 +565,13 @@ class MainWindow(QtWidgets.QMainWindow):
             os.mkdir(self.memory.task_out)
         name = self.memory.task_out + "/" + self.memory.task_name[self.state.task_end]
         # cv2.imwrite(name, self.memory.img_show) # 此处进行图片保存
-        cv2.imencode('.png', self.memory.img_show)[1].tofile(name) # 将图片编码缓存，并保存到本地
+        cv2.imencode('.png', self.memory.img_show)[1].tofile(name)  # 将图片编码缓存，并保存到本地
         self.state.task_end += 1
         self.ui.img.update()  # 更新界面
 
-        messagebox.showinfo(title='成功', message=f'图片保存完成\n{self.memory.task_out}\\{name}')
+        # messagebox.showinfo(title='成功', message=f'图片保存完成\n{self.memory.task_out}\\{name}')
         # self.ui.textEdit_3.setText('')
-        print(f'Info:图片保存完成\n{name}')
+        # print(f'Info:图片保存完成\n{name}')
 
         if self.state.task_end < self.state.task_num:
             self.panel_shownext()  # 如果仍无没结束，则继续该任务
@@ -572,8 +587,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.pushButton_6.setEnabled(False)
             self.ui.pushButton_5.setEnabled(False)
             self.ui.pushButton_15.setEnabled(False)
-            self.ui.pushButton.setEnabled(False)
-            self.ui.pushButton_3.setEnabled(False)
+            # self.ui.pushButton.setEnabled(False)
+            # self.ui.pushButton_3.setEnabled(False)
+        self.save_PDF('D:/testPics/out')  # 每一步都进行存储
 
     # 按钮点击实践：用于改变文字走向方向1：垂直；2：水平
     def change_word_way(self):
@@ -732,16 +748,16 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(self.memory.textline_box) == 0:
             self.state.action_running = False
             self.ui.pushButton_5.setEnabled(False)
-            self.ui.pushButton.setEnabled(False)
-            self.ui.pushButton_3.setEnabled(False)
+            # self.ui.pushButton.setEnabled(False)
+            # self.ui.pushButton_3.setEnabled(False)
             self.ui.pushButton_15.setEnabled(False)
-            self.ui.textEdit.setText('')
+            # self.ui.textEdit.setText('')
             self.ui.textEdit_2.setText('')
         else:
             box = self.memory.textline_box[0]
             result = self.memory.model(self.memory.img_show[box[1]:box[3] + box[1], box[0]:box[2] + box[0]])
             print("result的结果：" + str(result))
-            self.ui.textEdit.setText(result)
+            # self.ui.textEdit.setText(result)
             if result.replace(" ", "") == '':
                 print('War:文字识别异常,请手动输入')
                 self.ui.textEdit_2.setText('')
@@ -799,13 +815,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeit(self):
         self.state.action_running = False
-        self.ui.textEdit.setText('')
+        # self.ui.textEdit.setText('')
         self.ui.textEdit_2.setText('')
         self.state.action_running = False
         self.ui.pushButton_5.setEnabled(False)
         self.ui.pushButton_15.setEnabled(False)
-        self.ui.pushButton.setEnabled(False)
-        self.ui.pushButton_3.setEnabled(False)
+        # self.ui.pushButton.setEnabled(False)
+        # self.ui.pushButton_3.setEnabled(False)
 
     # 翻译选中内容
     def translation_img(self):
@@ -960,7 +976,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if pos == [0, 0, 0, 0] or pos[2] < 2 or pos[3] < 2:
             print('Error:未选择输入区域')
             return None
-        if self.state.img_half: # 此处处理一半内容
+        if self.state.img_half:  # 此处处理一半内容
             pos = self.memory.range_choice = [pos[0] * 2, pos[1] * 2, pos[2] * 2, pos[3] * 2]
             # self.ui.img_origin.img_pos = pos
             # self.ui.img_origin.update()

@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1112, 822)
+        MainWindow.resize(1048, 822)
         font = QtGui.QFont()
         font.setPointSize(9)
         MainWindow.setFont(font)
@@ -99,7 +99,7 @@ class Ui_MainWindow(object):
         self.pushButton_4.setObjectName("pushButton_4")
         self.pushButton_6 = QtWidgets.QPushButton(parent=self.widget_4)
         self.pushButton_6.setEnabled(False)
-        self.pushButton_6.setGeometry(QtCore.QRect(530, 55, 61, 26))
+        self.pushButton_6.setGeometry(QtCore.QRect(530, 55, 71, 26))
         self.pushButton_6.setMinimumSize(QtCore.QSize(60, 26))
         self.pushButton_6.setMaximumSize(QtCore.QSize(120, 16777215))
         self.pushButton_6.setSizeIncrement(QtCore.QSize(0, 31))
@@ -339,7 +339,7 @@ class Ui_MainWindow(object):
         self.gridLayout_3.addWidget(self.widget_4, 0, 0, 1, 3)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menuBar = QtWidgets.QMenuBar(parent=MainWindow)
-        self.menuBar.setGeometry(QtCore.QRect(0, 0, 1112, 25))
+        self.menuBar.setGeometry(QtCore.QRect(0, 0, 1048, 25))
         font = QtGui.QFont()
         font.setPointSize(11)
         self.menuBar.setFont(font)
@@ -458,7 +458,7 @@ class Ui_MainWindow(object):
 "</style></head><body style=\" font-family:\'Microsoft YaHei UI\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
 "<p style=\"-qt-paragraph-type:empty; margin-top:6px; margin-bottom:6px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>"))
         self.pushButton_4.setText(_translate("MainWindow", "文字识别"))
-        self.pushButton_6.setText(_translate("MainWindow", "保存"))
+        self.pushButton_6.setText(_translate("MainWindow", "下一张"))
         self.pushButton_2.setText(_translate("MainWindow", "排列:垂直"))
         self.label.setText(_translate("MainWindow", "当前队列:"))
         self.label_3.setText(_translate("MainWindow", "0/0"))

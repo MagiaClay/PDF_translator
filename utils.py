@@ -274,6 +274,19 @@ def pyMuPDF_fitz(pdfPath, imagePath):
     endTime_pdf2img = datetime.datetime.now()  # 结束时间
     # print('pdf2img时间=', (endTime_pdf2img - startTime_pdf2img).seconds)
 
+def del_dir(dir):  # 注意要加上'/'
+    if not os.path.exists(dir):
+        return False
+    if os.path.isfile(dir):
+        os.remove(dir)
+        return
+    for i in os.listdir(dir):
+        t = os.path.join(dir, i)
+        if os.path.isdir(t):
+            del_dir(t)  # 重新调用次方法
+        else:
+            os.unlink(t)
+        # os.rmdir(dir)  # 递归删除目录下面的空文件夹
 
 if __name__ == "__main__":
     # 1、PDF地址

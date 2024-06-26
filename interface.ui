@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1112</width>
+    <width>1048</width>
     <height>822</height>
    </rect>
   </property>
@@ -239,7 +239,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <rect>
          <x>530</x>
          <y>55</y>
-         <width>61</width>
+         <width>71</width>
          <height>26</height>
         </rect>
        </property>
@@ -267,7 +267,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
         </font>
        </property>
        <property name="text">
-        <string>保存</string>
+        <string>下一张</string>
        </property>
       </widget>
       <widget class="QPushButton" name="pushButton_2">
@@ -1045,7 +1045,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1112</width>
+     <width>1048</width>
      <height>25</height>
     </rect>
    </property>

@@ -6,7 +6,7 @@ import string
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 from paddleocr import PaddleOCR
-from utils import pyMuPDF_fitz, get_merged_pdf
+from utils import pyMuPDF_fitz, get_merged_pdf,del_dir
 
 from multiprocessing import freeze_support
 import translators as ts
@@ -17,7 +17,7 @@ import pandas as pd
 # 定义全局变量
 image_width = 0  # 待处理图片宽度
 image_height = 0  # 待处理图片高度
-text_size_ocr = 15  # 标准字体大小
+text_size_ocr = 16  # 标准字体大小
 origin_text_list = []
 translated_text_list = []
 
@@ -515,6 +515,7 @@ if __name__ == '__main__':
     pdfPath = 'D:/testPics/原文档.pdf' # 唯一需要改动的路径。只要保持D盘文
 
     # PDF转图片
+    del_dir(file_path)
     pyMuPDF_fitz(pdfPath, file_path_1)
 
     pictures = os.listdir(path=file_path)
@@ -548,6 +549,7 @@ if __name__ == '__main__':
                 image = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
                 image.save(dic_path_resize)  # 同名保存
         pictures_resize = os.listdir(path=file_resize_path)
+    del_dir(save_folder+'/')
     print('预处理完成。')
     for pic in pictures_resize:
         dic_path = file_resize_path + pic
@@ -570,7 +572,7 @@ if __name__ == '__main__':
         txts = [line[1][0] for line in result[0]]
         scores = [line[1][1] for line in result[0]]
 
-        im_show = draw_ocr_box_txt_one_pic(image, boxes, txts, text_blocks, scores, drop_score=0.80,
+        im_show = draw_ocr_box_txt_one_pic(image, boxes, txts, text_blocks, scores, drop_score=0.85,
                                            font_path=font_path)
         # im_show.show()
         # 保存
