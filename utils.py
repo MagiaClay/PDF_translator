@@ -7,6 +7,10 @@ import os
 import glob
 import fitz
 import PyPDF2
+import requests
+import random
+import json
+from hashlib import md5
 
 # 防止字符串乱码
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
@@ -237,9 +241,11 @@ def get_merged_pdf(imgs_path):
 
     # 将pdf合并成一个pdf
     pdf_names_list = os.listdir(save_pdf_path)
+    pdf_names_list.sort(key=lambda x: int(x[7:-4]))  # 经行排序排序(image_xx.pdf)
     pdf_writer = PyPDF2.PdfWriter()
     for pdf_n in pdf_names_list:
         pdf_p = os.path.join(save_pdf_path, pdf_n)
+        # print(pdf_n)
         pdf_obj = open(pdf_p, 'rb')
         pdf_reader = PyPDF2.PdfReader(pdf_obj)
         for page in range(len(pdf_reader.pages)):
@@ -274,6 +280,7 @@ def pyMuPDF_fitz(pdfPath, imagePath):
     endTime_pdf2img = datetime.datetime.now()  # 结束时间
     # print('pdf2img时间=', (endTime_pdf2img - startTime_pdf2img).seconds)
 
+
 def del_dir(dir):  # 注意要加上'/'
     if not os.path.exists(dir):
         return False
@@ -287,6 +294,41 @@ def del_dir(dir):  # 注意要加上'/'
         else:
             os.unlink(t)
         # os.rmdir(dir)  # 递归删除目录下面的空文件夹
+
+
+# 百度翻译
+def baidu_translator(text='', from_lang='en', to_lang='zh'):
+    # Set your own appid/appkey.
+    appid = '20240628002087171'
+    appkey = 'uN9S5RZGcBZFjgCmmiYg'
+
+    # For list of language codes, please refer to `https://api.fanyi.baidu.com/doc/21`
+    from_lang = from_lang
+    to_lang = to_lang
+    query = text
+
+    endpoint = 'http://api.fanyi.baidu.com'
+    path = '/api/trans/vip/translate'
+    url = endpoint + path
+
+    # Generate salt and sign
+    def make_md5(s, encoding='utf-8'):
+        return md5(s.encode(encoding)).hexdigest()
+
+    salt = random.randint(32768, 65536)
+    sign = make_md5(appid + query + str(salt) + appkey)
+
+    # Build request
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    payload = {'appid': appid, 'q': query, 'from': from_lang, 'to': to_lang, 'salt': salt, 'sign': sign}
+    # Send request
+    r = requests.post(url, params=payload, headers=headers)
+    result = r.json()  # json file
+    # print(result['trans_result'])
+    # for p in result['trans_result']:
+    #     print(str(p['dst']))
+    return result['trans_result']
+
 
 if __name__ == "__main__":
     # 1、PDF地址

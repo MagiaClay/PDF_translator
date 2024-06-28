@@ -6,18 +6,19 @@ import string
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 from paddleocr import PaddleOCR
-from utils import pyMuPDF_fitz, get_merged_pdf,del_dir
+from utils import pyMuPDF_fitz, get_merged_pdf,del_dir, baidu_translator
 
 from multiprocessing import freeze_support
-import translators as ts
+# import translators as ts
 import cv2
 import layoutparser as lp
 import pandas as pd
 
+
 # 定义全局变量
 image_width = 0  # 待处理图片宽度
 image_height = 0  # 待处理图片高度
-text_size_ocr = 16  # 标准字体大小
+text_size_ocr = 17  # 标准字体大小
 origin_text_list = []
 translated_text_list = []
 
@@ -124,6 +125,8 @@ def draw_ocr_box_txt_one_pic(image,
     # 新建一张白色的图
     img_right = np.ones((h, w, 3), dtype=np.uint8) * 255  # 初始化一个同样大小的图片
     random.seed(0)
+    origin_result = '' # 存储源翻译文本
+    trans_result = None # 存储翻译结果的字典
 
     # ImageDraw模块提供了图像对象的简单2D绘制。用户可以使用这个模块创建新的图像，注释或润饰已存在图像，为web应用实时产生各种图形。 Draw()创建一个可以在给定图像上绘图的对象。
     # img_left_array = np.array(img_left)  # 分支一
@@ -163,7 +166,20 @@ def draw_ocr_box_txt_one_pic(image,
             # 需要在Ocrlist里面push其内部的OCR
             for ocr in layout.ocr_box_list:
                 ocr_list.append(ocr)
-        # 得到的layout_list_temp[] 用于文本段的绘制 和 ocr_list，用于剩下需要单独绘制的OCR
+    # 得到的layout_list_temp[] 用于文本段的绘制 和 ocr_list，用于剩下需要单独绘制的OCR
+    # 此处需要对ocr_list 和layout_list_temp[]集中处理
+    # TODO : 将每一句txt进行以'\n'的打包，传入baidu翻译进行通篇翻译，返回dict结果存在trans_result[]里面
+    index = 0
+    for o in ocr_list:
+        origin_result += o.txt + '\n'
+        index+=1
+    for layout_t in layout_list_temp:
+        origin_result += layout_t.txt + '\n'
+        # print('这是txt中的内容：'+layout_t.txt)
+
+    trans_result = baidu_translator(text=origin_result)
+    # for p in trans_result:
+    #     print('翻译：'+str(p['src']))
     # 填涂背景与OCR的书写
     for idx, (box, txt) in enumerate(zip(boxes, txts)):
         if scores is not None and scores[idx] < drop_score:  # 过滤准确度低的文本信息
@@ -189,6 +205,11 @@ def draw_ocr_box_txt_one_pic(image,
             # 如果在，则正常绘制
             if (ocr.box[0] == box_reg[0]) and (ocr.box[1] == box_reg[2]):
                 # 填字的时候仍然使用的是曲边box
+                # TODO 此处要对txt进行筛选
+                for re in trans_result:
+                    if re['src'] == txt:
+                        txt = re['dst'] # 此处进行文本替换
+                        break
                 img_right_text = draw_box_txt_fine((w, h), txt, font_path, 'cn', box=box)  # 返回的是一个个包含文本信息的图片，整张图片的相对位置
                 # 此处进行对修改后的副本经行文字融合
                 img_right = cv2.bitwise_and(img_right, img_right_text)  # 右图位图迭代合并拼接
@@ -196,6 +217,10 @@ def draw_ocr_box_txt_one_pic(image,
     for layout in layout_list_temp:
         width = layout.Bbox[2] - layout.Bbox[0]
         height = layout.Bbox[3] - layout.Bbox[1]
+        layout.txt = trans_result[index]['dst']
+        index += 1 # 此处写法不规范，容易造成数组溢出
+
+        # print("这是laoyout文本"+ layout.txt)
         img_right_text = draw_box_txt_fine((w, h), layout.txt, font_path, 'cn', is_multiline=True,
                                            multi_box=(
                                                layout.Bbox[0], layout.Bbox[1], width,
@@ -359,7 +384,9 @@ def address_font(txt):
     if is_num:
         txt = txt
     else:
-        txt = ts.translate_text(txt, to_language='cn',translator='baidu')  # 段落翻译，并不是整体翻译
+        # txt = ts.translate_text(txt, to_language='cn',translator='baidu')  # 段落翻译，并不是整体翻译
+        txt = txt
+        pass
 
     return txt
 
@@ -375,8 +402,10 @@ def create_font(txt, sz, font_path="./fonts/simfang.ttf", is_multiline=False):  
         font_size = round(sz[1] * 0.85)
         # 对字体大小进行量化
         font_size = font_size - (font_size % 3)  # 3倍量化
-        if 10 < font_size < 36:
+        if 1 < font_size < 36:
             font_size = text_size_ocr
+        elif font_size >= 36:
+            font_size = 36 # 设置最大字体
         font = ImageFont.truetype(font_path, font_size, encoding="utf-8")
         length = font.getlength(txt)
     first_line = True
@@ -401,7 +430,7 @@ def create_font(txt, sz, font_path="./fonts/simfang.ttf", is_multiline=False):  
             txt = temp[:int(sz[0]) // font_size] # 此处有问题，需要返回被省略的标准函数
             alpha_temp = str_count(txt)[1]
             # 此处重新调整换行判断
-            if alpha_temp > 2:
+            if alpha_temp >= 1:
                 idx = (int(sz[0]) // font_size) + alpha_temp
                 txt = temp[:idx]
                 space_txt += txt + '\n'
@@ -486,6 +515,7 @@ def resize_keep_aspectratio(image_src, dst_size):
 
 if __name__ == '__main__':
     freeze_support()  # 异步线程可能会报RUntime Error
+    # ssl._create_default_https_context = ssl._create_unverified_context
     # Paddleocr目前支持的多语言语种可以通过修改lang参数进行切换
     # 例如`ch`, `en`, `fr`, `german`, `korean`, `japan`
 
@@ -512,7 +542,7 @@ if __name__ == '__main__':
     file_resize_path = 'D:/testPics/OCR_translated_resize/'
     save_folder = 'D:/testPics/OCR_translated'
     font_path = './fonts/simfang.ttf'  # PaddleOCR下提供字体包
-    pdfPath = 'D:/testPics/原文档.pdf' # 唯一需要改动的路径。只要保持D盘文
+    pdfPath = 'D:/testPics/dataset/中英文对照文本/CL715 化学品符合性声明/CL715 Chemical Declaration of Conformity.pdf' # 唯一需要改动的路径。只要保持D盘文
 
     # PDF转图片
     del_dir(file_path)
@@ -572,8 +602,8 @@ if __name__ == '__main__':
         txts = [line[1][0] for line in result[0]]
         scores = [line[1][1] for line in result[0]]
 
-        im_show = draw_ocr_box_txt_one_pic(image, boxes, txts, text_blocks, scores, drop_score=0.85,
-                                           font_path=font_path)
+        im_show = draw_ocr_box_txt_one_pic(image, boxes, txts, text_blocks, scores, drop_score=0.90,
+                                           font_path=font_path) # 此处确定置信度区间为0.85
         # im_show.show()
         # 保存
         path = save_folder + '/' + pic

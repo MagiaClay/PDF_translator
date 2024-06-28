@@ -17,6 +17,7 @@ from paddleocr import PaddleOCR
 from translate import translate, change_translate_mod
 from covermaker import conf, render
 from inpainting import Inpainting
+
 from interface import Ui_MainWindow
 from characterStyle import Ui_Dialog as CharacterStyleDialog
 from textblockdetector import dispatch as textblockdetector

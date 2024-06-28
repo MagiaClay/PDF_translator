@@ -1,6 +1,6 @@
 from .google import translate as gtranslate
 from .deepL import DeepLTranslator as dtranslate
-import translators as ts
+# import translators as ts
 
 
 __all__ = ['translate', 'change_translate_mod'] # 导入的方法
@@ -32,8 +32,8 @@ def translate(text='', to_language="zh-CN", from_language="auto", in_mod=0):
             to_language = 'zh'
         if mod == 1:
             # 次数使用translator作为翻译
-            # return dtranslate(translate_str=text, target_lang=to_language, translate_mode='word').translate()['result']
-            return ts.translate_text(text, translator='bing', to_language='ch')
+            return dtranslate(translate_str=text, target_lang=to_language, translate_mode='word').translate()['result']
+            # return ts.translate_text(text, translator='bing', to_language='ch')
         elif mod == 2:
             return dtranslate(translate_str=text, target_lang=to_language, translate_mode='sentences').translate()[
                 'result']

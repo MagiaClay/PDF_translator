@@ -22,6 +22,7 @@ layoutparser
 img2pdf
 PyPDF2
 
+
 # ----------------------Ignored dependent packages---------------------
 #altgraph==0.17.2
 #fire==0.4.0
