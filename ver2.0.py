@@ -542,7 +542,7 @@ if __name__ == '__main__':
     file_resize_path = 'D:/testPics/OCR_translated_resize/'
     save_folder = 'D:/testPics/OCR_translated'
     font_path = './fonts/simfang.ttf'  # PaddleOCR下提供字体包
-    pdfPath = 'D:/testPics/dataset/中英文对照文本/CL715 化学品符合性声明/CL715 Chemical Declaration of Conformity.pdf' # 唯一需要改动的路径。只要保持D盘文
+    pdfPath = 'D:/testPics/dataset/中英文对照文本/与Perform的材料兼容性测试/materials compatibility test with Perform.pdf' # 唯一需要改动的路径。只要保持D盘文
 
     # PDF转图片
     del_dir(file_path)

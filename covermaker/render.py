@@ -99,7 +99,7 @@ class Render(object):
                                             is_multiline=True,
                                             multi_box=(section.box.lt[0],section.box.lt[1],section.box.w,section.box.h))
             img_cv = cv2.bitwise_and(img_cv,img_cv_text)
-            self._img = Image.fromarray(img_cv)
+            self._img = Image.fromarray(cv2.cvtColor(img_cv,cv2.COLOR_BGR2RGB)) # 此处未进行颜色通道的转换
 
     def _draw_text_box(self, box):
         self._img_draw.rectangle((box.lt, box.rb), outline='#ff0000', width=2)

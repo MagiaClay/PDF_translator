@@ -64,7 +64,7 @@ class memory():
     img_in = None  # 输入图像
     img_out = None  # 输出图像
 
-    task_out = ''  # 导出的目录
+    task_out = ''  # 不要更改
     task_name = []  # 文件名
     task_img = []  # 图片原文件
 
@@ -564,9 +564,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.state.action_running = False
         if not os.path.exists(self.memory.task_out):
             os.mkdir(self.memory.task_out)
-        name = self.memory.task_out + "/" + self.memory.task_name[self.state.task_end]
+        name = self.memory.task_out + "/" + self.memory.task_name[self.state.task_end] # 读取当前图片绝对路劲
         # cv2.imwrite(name, self.memory.img_show) # 此处进行图片保存
-        cv2.imencode('.png', self.memory.img_show)[1].tofile(name)  # 将图片编码缓存，并保存到本地
+        cv2.imencode('.png', self.memory.img_show)[1].tofile(name)  # 此处以二进制形式保存到文件中
         self.state.task_end += 1
         self.ui.img.update()  # 更新界面
 
@@ -575,6 +575,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # print(f'Info:图片保存完成\n{name}')
 
         if self.state.task_end < self.state.task_num:
+            self.save_PDF('D:/testPics/out')  # 每一步都进行存储
             self.panel_shownext()  # 如果仍无没结束，则继续该任务
         else:
             self.panel_clean()
@@ -588,9 +589,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.pushButton_6.setEnabled(False)
             self.ui.pushButton_5.setEnabled(False)
             self.ui.pushButton_15.setEnabled(False)
+            self.save_PDF('D:/testPics/out')  # 每一步都进行存储
             # self.ui.pushButton.setEnabled(False)
             # self.ui.pushButton_3.setEnabled(False)
-        self.save_PDF('D:/testPics/out')  # 每一步都进行存储
+
 
     # 按钮点击实践：用于改变文字走向方向1：垂直；2：水平
     def change_word_way(self):
@@ -704,7 +706,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 pass
                 # self.do_translation()
 
-    # 进行翻译
+    # 进行翻译,此函数暂不需要
     def do_translation(self):
         pos = self.memory.textline_box[0]  # 获取第一个box
         if self.var.img_re_bool:  # 如果需要图像修复
@@ -773,14 +775,14 @@ class MainWindow(QtWidgets.QMainWindow):
         text = self.ui.textEdit_2.toPlainText()  # 获取text文本，此处是否输入含'\n'的文本内容
         pos = self.get_pos()
         img1_cv2_temp = self.memory.img_show[pos[1]:pos[1] + pos[3], pos[0]:pos[0] + pos[2]]  # 注意此处是【w,h】
-        blue, green, red = bincount_1(img1_cv2_temp)
+        blue, green, red = bincount_1(img1_cv2_temp) # 此处惊醒了填充BGR
         tempImage = Image.fromarray(cv2.cvtColor(self.memory.img_show, cv2.COLOR_BGR2RGB))
         draw_img = ImageDraw.Draw(tempImage)
         draw_img.rectangle(
             ((pos[0], pos[1]), ((pos[0] + pos[2]), (pos[1] + pos[3]))),
             fill=(red, green, blue),  # (red,green,blue)
             outline=None)
-        self.memory.img_show = cv2.cvtColor(np.array(tempImage), cv2.COLOR_RGB2BGR)
+        self.memory.img_show = cv2.cvtColor(np.array(tempImage), cv2.COLOR_RGB2BGR) # 返回成为BGR
         if text.replace(" ", "") != '':  # 如果输入的文本部位空
             img = self.memory.img_show.copy()  # 从memory获得当前的图片
             # pos = self.memory.textline_box[0]  # 获得当前鼠标画出的矩形窗, 均统计为POS[x, y, w, h]
@@ -867,13 +869,18 @@ class MainWindow(QtWidgets.QMainWindow):
             result = self.memory.model.ocr('./sniptemp.png', cls=True)
 
             if self.var.img_language == 'ja':
-                self.ui.textEdit.setText(result)
+                pass
+                # self.ui.textEdit.setText(result)
             else:  # 使用PaddleOCR的情况
                 str = ''
-                txts = [line[1][0] for line in result[0]]
-                for p in txts:
-                    str += p
-                result = str
+                if result[0]:
+                    txts = [line[1][0] for line in result[0]]
+                    for p in txts:
+                        str += p
+                    result = str
+                else:
+                    result = ''
+
                 # self.ui.textEdit.setText(result)
 
             if result.replace(" ", "") == '':
@@ -1002,7 +1009,9 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             img_origin = self.memory.img_show_origin
             img = self.memory.img_show
-        cv2.imwrite('save.jpg', self.memory.img_show)  # 保存缓存
+        # name = self.memory.task_out + "/" + self.memory.task_name[self.state.task_end]  # 读取当前图片绝对路劲/
+        cv2.imwrite('D:/testPics/OCR_translated/'+self.memory.task_name[self.state.task_end], self.memory.img_show)  # 希望将缓存保存在指定文件夹下
+        # cv2.imwrite('D:/testPics/out/' + f'{root}' + ext, img=img)  # 将文件存储
         img_origin = cv2.cvtColor(img_origin, cv2.COLOR_BGR2RGB)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         showImage_origin = QtGui.QImage(img_origin.data, img_origin.shape[1], img_origin.shape[0],
