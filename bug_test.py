@@ -3,7 +3,7 @@ import random
 import json
 from hashlib import md5
 
-
+# 此文件用于功能测试
 def baidu_translator(text='', from_lang='en', to_lang='zh'):
     # Set your own appid/appkey.
     appid = '20240628002087171'
