@@ -433,7 +433,7 @@ def create_font(txt, sz, font_path="./fonts/simfang.ttf", is_multiline=False):  
             if alpha_temp >= 1:
                 idx = (int(sz[0]) // font_size) + alpha_temp
                 txt = temp[:idx]
-                space_txt += txt + '\n'
+                space_txt += txt + ' ' + '\n'
                 txt = temp[idx:]
                 continue
             else:
@@ -445,7 +445,7 @@ def create_font(txt, sz, font_path="./fonts/simfang.ttf", is_multiline=False):  
                 first_line = False
             else:
                 new_txt = txt  # 在此处确认是否要缩进
-            space_txt += new_txt + '\n'
+            space_txt += new_txt + ' ' + '\n'
             txt = temp[int(sz[0]) // font_size:]
     space_txt += txt
 
@@ -529,7 +529,7 @@ if __name__ == '__main__':
     # translator restrict
     origin_text_list = []
     translated_text_list = []
-    data = pd.read_csv('D:/testPics/temp/translated.csv')
+    data = pd.read_csv('D:/testPics/translated.csv')
     for index, row in data.iterrows():
         row_Data_1 = row.iloc[0]
         row_Data_2 = row.iloc[1]

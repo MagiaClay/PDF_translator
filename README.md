@@ -18,8 +18,8 @@ ps：机翻有待加强，目前对横向文本支持较好，垂直文本非中
 
 ```diff
 ! 第一次运行程序需要联网下载model参数
-！ 请在确认PaddleOCR和LayoutParser正常运作后使用  
-! 尽量维持原先目录结构，文件输出结果在/out/文件夹下
+！请在确认PaddleOCR和LayoutParser正常运作后使用  
+! 尽量维持原先目录结构，数据统一存放在'D:/testPics/'下，git后可改变该路径
 ```  
 
 ## 更新
