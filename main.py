@@ -136,14 +136,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
     # 用于清除out文件中的缓存
     def ram_ready(self):
-        out_path = 'D:/testPics/out/'
+        out_path = 'testPics/out/'
         del_dir(out_path)
     # 槽
     def uireadly(self):
         self.ui.action1.triggered.connect(
             lambda event: QtGui.QDesktopServices.openUrl(QtCore.QUrl('https://sljly.xyz/')))
         self.ui.action2.triggered.connect(
-            lambda event: QtGui.QDesktopServices.openUrl(QtCore.QUrl('https://github.com/jtl1207/comic-translation/')))
+            lambda event: QtGui.QDesktopServices.openUrl(QtCore.QUrl('https://github.com/jtl1207/comic-translation/'))) # 访问源作者仓库
         # self.ui.action3.triggered.connect(lambda event: print('1111'))
 
         self.ui.actionja.triggered.connect(lambda event: self.change_mod('ja'))
@@ -433,7 +433,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     if channel == 1:
                         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
                     cv2.imwrite(
-                        filename='D:/testPics/out/' + f'{os.path.splitext(os.path.basename(file_path))[0]}' + '.png',
+                        filename='testPics/out/' + f'{os.path.splitext(os.path.basename(file_path))[0]}' + '.png',
                         img=img)  # 将文件存储
                     self.memory.task_img.append(img)
                     self.state.task_num += 1
@@ -463,7 +463,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     height, width, channel = img.shape
                 if channel == 1:
                     img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-                cv2.imwrite('D:/testPics/out/' + f'{root}' + ext, img=img)  # 将文件存储
+                cv2.imwrite('testPics/out/' + f'{root}' + ext, img=img)  # 将文件存储
                 self.memory.task_img.append(img)
                 self.state.task_num = 1
                 self.state.task_end = 0
@@ -519,7 +519,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.img.setStyleSheet('background-color:rgb(255,255,255);\ncolor:rgba(0,0,0,0);')
         self.ui.img_origin.setStyleSheet('background-color:rgb(255,255,255);\ncolor:rgba(0,0,0,0);')
         img_origin_path = self.memory.task_name[self.state.task_end]
-        filepath = 'D:/testPics/PDFtoPIC/' + os.path.split(img_origin_path)[1]
+        filepath = 'testPics/PDFtoPIC/' + os.path.split(img_origin_path)[1]
         # 注意此处源文件副本存放的路径，之后会把副本
         # 文件存放在指定布鲁下
         try:
@@ -575,7 +575,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # print(f'Info:图片保存完成\n{name}')
 
         if self.state.task_end < self.state.task_num:
-            self.save_PDF('D:/testPics/out')  # 每一步都进行存储
+            self.save_PDF('testPics/out')  # 每一步都进行存储
             self.panel_shownext()  # 如果仍无没结束，则继续该任务
         else:
             self.panel_clean()
@@ -589,7 +589,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.pushButton_6.setEnabled(False)
             self.ui.pushButton_5.setEnabled(False)
             self.ui.pushButton_15.setEnabled(False)
-            self.save_PDF('D:/testPics/out')  # 每一步都进行存储
+            self.save_PDF('testPics/out')  # 每一步都进行存储
             # self.ui.pushButton.setEnabled(False)
             # self.ui.pushButton_3.setEnabled(False)
 
@@ -1010,7 +1010,7 @@ class MainWindow(QtWidgets.QMainWindow):
             img_origin = self.memory.img_show_origin
             img = self.memory.img_show
         # name = self.memory.task_out + "/" + self.memory.task_name[self.state.task_end]  # 读取当前图片绝对路劲/
-        cv2.imwrite('D:/testPics/OCR_translated/'+self.memory.task_name[self.state.task_end], self.memory.img_show)  # 希望将缓存保存在指定文件夹下
+        cv2.imwrite('testPics/OCR_translated/'+self.memory.task_name[self.state.task_end], self.memory.img_show)  # 希望将缓存保存在指定文件夹下
         # cv2.imwrite('D:/testPics/out/' + f'{root}' + ext, img=img)  # 将文件存储
         img_origin = cv2.cvtColor(img_origin, cv2.COLOR_BGR2RGB)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)

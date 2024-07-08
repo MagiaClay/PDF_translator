@@ -309,7 +309,7 @@ def baidu_translator(text='', from_lang='en', to_lang='zh'):
     to_lang = to_lang
     query = text
 
-    endpoint = 'http://api.fanyi.baidu.com'
+    endpoint = 'http://api.fanyi.baidu.com' # 注意此处API有使用上限，注意更改
     path = '/api/trans/vip/translate'
     url = endpoint + path
 
@@ -334,9 +334,9 @@ def baidu_translator(text='', from_lang='en', to_lang='zh'):
 
 if __name__ == "__main__":
     # 1、PDF地址
-    pdfPath = 'D:/testPics/原文档.pdf'
+    pdfPath = 'testPics/原文档.pdf'
     # 2、需要储存图片的目录
-    imagePath = 'D:/testPics/PDFtoPIC'  # 不用加/
+    imagePath = 'testPics/PDFtoPIC'  # 不用加/
     pyMuPDF_fitz(pdfPath, imagePath)
 
     # 将图像保存为PDF, 保存路径为源目录

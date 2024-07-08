@@ -6,7 +6,7 @@ import string
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 from paddleocr import PaddleOCR
-from utils import pyMuPDF_fitz, get_merged_pdf,del_dir, baidu_translator
+from utils import pyMuPDF_fitz, get_merged_pdf, del_dir, baidu_translator
 
 from multiprocessing import freeze_support
 # import translators as ts
@@ -118,7 +118,7 @@ def draw_ocr_box_txt_one_pic(image,
     # 全局变量更新
     global image_width, image_height
     image_height = image.height
-    image_width = image_width
+    image_width = image.width
     h, w = image.height, image.width
     img_left = image.copy()
     # print("该图像目前1/4宽为："+str(w/6))
@@ -293,7 +293,7 @@ def rectangle_normalization_bbox(box):
     x0 = int(box[0][1])
     x1 = int(box[0][1] + box_height)
 
-    return y0, y1, x0, x1  # 返回一个标准化的bbox
+    return y0, y1, x0, x1  # 返回一个标准化的bbox【x0, x1, y0,y1】
 
 
 def draw_box_txt_fine(img_size, txt, font_path="./fonts/simfang.ttf", lang='en', is_multiline=False, box=None,
@@ -421,7 +421,7 @@ def create_font(txt, sz, font_path="./fonts/simfang.ttf", is_multiline=False):  
         return font, sz, space_txt, is_overflow  # 多返回值没问题
 
     if is_multiline:
-        while str_count(txt)[0] >= int(sz[0]) // font_size:
+        while str_count(txt)[0] >= int(sz[0]) // font_size: # 比较字数
 
             # length = font.getlength(txt)
             # a = str_count(txt)
@@ -520,16 +520,16 @@ if __name__ == '__main__':
     # 例如`ch`, `en`, `fr`, `german`, `korean`, `japan`
 
     ocr = PaddleOCR(use_angle_cls=True, lang="en",
-                    use_gpu=False, show_log=False)  # need to run only once to download and load model into memory
+                    use_gpu=False, show_log=False)  # 此处需要联网下载最新的pt，也可以保存在本地加载离线
     model = lp.PaddleDetectionLayoutModel(config_path="lp://PubLayNet/ppyolov2_r50vd_dcn_365e_publaynet/config",
                                           threshold=0.4,
                                           label_map={0: "Text", 1: "Title", 2: "List", 3: "Table", 4: "Figure"},
                                           enforce_cpu=True,
-                                          enable_mkldnn=True)
+                                          enable_mkldnn=True) # 同理下载lp
     # translator restrict
     origin_text_list = []
     translated_text_list = []
-    data = pd.read_csv('D:/testPics/translated.csv')
+    data = pd.read_csv('testPics/translated.csv')
     for index, row in data.iterrows():
         row_Data_1 = row.iloc[0]
         row_Data_2 = row.iloc[1]
@@ -537,12 +537,12 @@ if __name__ == '__main__':
         translated_text_list.append(row_Data_2)
 
     # DATA
-    file_path = 'D:/testPics/PDFtoPIC/'  # f翻译目录源文件,记得加'/'
-    file_path_1 = 'D:/testPics/PDFtoPIC'
-    file_resize_path = 'D:/testPics/OCR_translated_resize/'
-    save_folder = 'D:/testPics/OCR_translated'
+    file_path = 'testPics/PDFtoPIC/'  # f翻译目录源文件,记得加'/'
+    file_path_1 = 'testPics/PDFtoPIC'
+    file_resize_path = 'testPics/OCR_translated_resize/'
+    save_folder = 'testPics/OCR_translated'
     font_path = './fonts/simfang.ttf'  # PaddleOCR下提供字体包
-    pdfPath = 'D:/testPics/dataset/中英文对照文本/与Perform的材料兼容性测试/materials compatibility test with Perform.pdf' # 唯一需要改动的路径。只要保持D盘文
+    pdfPath = 'testPics/原文档.pdf' # 唯一需要改动的路径。只要保持D盘文
 
     # PDF转图片
     del_dir(file_path)
