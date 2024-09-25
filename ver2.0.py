@@ -542,7 +542,8 @@ if __name__ == '__main__':
     file_resize_path = 'testPics/OCR_translated_resize/'
     save_folder = 'testPics/OCR_translated'
     font_path = './fonts/simfang.ttf'  # PaddleOCR下提供字体包
-    pdfPath = 'testPics/原文档.pdf' # 唯一需要改动的路径。只要保持D盘文
+    # pdfPath = 'testPics/原文档.pdf' # 唯一需要改动的路径。只要保持D盘文
+    pdfPath = 'D:/soud_dataset/Artical/PANNs声纹识别预测网络论文.pdf' # 唯一需要改动的路径。只要保持D盘文
 
     # PDF转图片
     del_dir(file_path)

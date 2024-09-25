@@ -16,7 +16,7 @@ from paddleocr import PaddleOCR
 
 from translate import translate, change_translate_mod
 from covermaker import conf, render
-from inpainting import Inpainting
+# from inpainting import Inpainting
 
 from interface import Ui_MainWindow
 from characterStyle import Ui_Dialog as CharacterStyleDialog
@@ -1057,7 +1057,7 @@ class MainWindow(QtWidgets.QMainWindow):
             mark[mark != 0] = 255
         img1 = self.memory.img_show.copy()
         img1[mark > 0] = 255
-        self.memory.img_repair = Inpainting(img1, mark)
+        # self.memory.img_repair = Inpainting(img1, mark)
 
     # 朗读
     def tts(self):
